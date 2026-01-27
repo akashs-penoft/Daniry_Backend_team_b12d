@@ -5,6 +5,14 @@ import cors from 'cors';
 import { db } from './src/configs/db.js';
 import contactRoutes from './src/routes/contactRoutes.js';
 import adminRoutes from './src/routes/adminRoutes.js';
+import testimonialRoutes from './src/routes/testimonialRoutes.js';
+import settingsRoutes from './src/routes/settingsRoutes.js';
+import newsletterRoutes from './src/routes/newsletterRoutes.js';
+import path from 'path';
+import { fileURLToPath } from 'url';
+
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
 dotenv.config();
 
 // Test DB Connection
@@ -42,6 +50,18 @@ app.use('/api/contact', contactRoutes);
 
 // Admin routes
 app.use('/api/admin', adminRoutes);
+
+// Testimonial routes
+app.use('/api/testimonials', testimonialRoutes);
+
+// Settings routes
+app.use('/api/settings', settingsRoutes);
+
+// Newsletter routes
+app.use('/api/newsletter', newsletterRoutes);
+
+// Static files for uploads
+app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
 
 
 

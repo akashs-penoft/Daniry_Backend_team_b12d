@@ -118,6 +118,25 @@ export const getUserEmailTemplate = (fullName, message) => baseTemplate(`
   <p style="margin-top: 25px;">Stay healthy,<br/><strong>The Daniry Team</strong></p>
 `);
 
+export const getNewsBlastTemplate = (heading, content) => baseTemplate(`
+  <h2 style="color: #40308a; margin-top: 0; text-align: center;">${heading}</h2>
+  
+  <div class="divider"></div>
+  
+  <div style="font-size: 16px; color: #333; line-height: 1.8;">
+    ${content}
+  </div>
+  
+  <div class="divider"></div>
+  
+  <p style="font-size: 12px; color: #999; text-align: center;">
+    You are receiving this because you subscribed to Daniry updates.<br/>
+    If you no longer wish to receive these emails, you can unsubscribe at any time.
+  </p>
+  
+  <p style="margin-top: 25px; text-align: center;">Stay healthy,<br/><strong>The Daniry Team</strong></p>
+`);
+
 export const getAdminEmailTemplate = (fullName, contactNumber, email, reason, message) => baseTemplate(`
   <h2 style="color: #40308a; margin-top: 0;">New Contact Enquiry</h2>
   <p>A new enquiry has been submitted through the website contact form.</p>
@@ -169,4 +188,18 @@ export const getPasswordResetTemplate = (resetUrl) => baseTemplate(`
   </p>
   
   <p style="margin-top: 25px;">Regards,<br/><strong>The Daniry Team</strong></p>
+`);
+
+export const getNewsletterConfirmationTemplate = () => baseTemplate(`
+  <h2 style="color: #40308a; margin-top: 0;">Welcome to Daniry!</h2>
+  <p>Thank you for subscribing to our newsletter. You are now part of our community!</p>
+  <p>You'll be the first to receive updates on our latest nutritional products, health tips, and exclusive offers.</p>
+  
+  <div class="divider"></div>
+  
+  <p style="font-size: 14px; color: #666;">
+    If you didn't mean to subscribe, you can safely ignore this email.
+  </p>
+  
+  <p style="margin-top: 25px;">Stay healthy,<br/><strong>The Daniry Team</strong></p>
 `);
