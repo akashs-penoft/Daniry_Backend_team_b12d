@@ -1,0 +1,26 @@
+{
+  "name": "daniry_backend_team_b12d",
+  "version": "1.0.0",
+  "main": "index.js",
+  "type": "module",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "start": "node index.js",
+    "dev": "nodemon index.js"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/akashs-penoft/Daniry_Backend_team_b12d.git"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/akashs-penoft/Daniry_Backend_team_b12d/issues"
+  },
+  "homepage": "https://github.com/akashs-penoft/Daniry_Backend_team_b12d#readme",
+  "description": "",
+  "dependencies": {
+    "express": "^5.2.1"
+  }
+}
