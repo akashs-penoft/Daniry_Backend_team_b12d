@@ -21,6 +21,11 @@
   "homepage": "https://github.com/akashs-penoft/Daniry_Backend_team_b12d#readme",
   "description": "",
   "dependencies": {
-    "express": "^5.2.1"
+    "bcrypt": "^6.0.0",
+    "cookie-parser": "^1.4.7",
+    "cors": "^2.8.6",
+    "dotenv": "^17.2.3",
+    "express": "^5.2.1",
+    "jsonwebtoken": "^9.0.3"
   }
 }
