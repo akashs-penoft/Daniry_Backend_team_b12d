@@ -3,6 +3,7 @@ import dotenv from "dotenv";
 import cookieParser from 'cookie-parser';
 import cors from 'cors';
 import { db } from './src/configs/db.js';
+import contactRoutes from './src/routes/contactRoutes.js';
 dotenv.config();
 
 // Test DB Connection
@@ -27,10 +28,22 @@ app.use(cors(
   }
 ));
 
-// 
+// Test Route
 app.get('/', (req, res) => {
   res.send('Daniry Backend Running!');
 });
+
+
+
+// api routes
+
+// contact form routes
+app.use('/api/contact', contactRoutes);
+
+
+
+
+
 
 // run server
 app.listen(PORT, () => {
