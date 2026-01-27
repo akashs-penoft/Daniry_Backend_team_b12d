@@ -2,6 +2,18 @@ import express from "express";
 import dotenv from "dotenv";
 import cookieParser from 'cookie-parser';
 import cors from 'cors';
+import { db } from './src/configs/db.js';
+dotenv.config();
+
+// Test DB Connection
+db.getConnection()
+  .then((connection) => {
+    console.log("Database connected successfully");
+    connection.release();
+  })
+  .catch((err) => {
+    console.error("Database connection failed:", err);
+  });
 
 const app = express();
 const PORT = process.env.PORT || 3000;
@@ -15,7 +27,10 @@ app.use(cors(
   }
 ));
 
-
+// 
+app.get('/', (req, res) => {
+  res.send('Daniry Backend Running!');
+});
 
 // run server
 app.listen(PORT, () => {
