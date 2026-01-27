@@ -4,6 +4,7 @@ import cookieParser from 'cookie-parser';
 import cors from 'cors';
 import { db } from './src/configs/db.js';
 import contactRoutes from './src/routes/contactRoutes.js';
+import adminRoutes from './src/routes/adminRoutes.js';
 dotenv.config();
 
 // Test DB Connection
@@ -35,10 +36,13 @@ app.get('/', (req, res) => {
 
 
 
-// api routes
-
+//-----------api routes---------------
 // contact form routes
 app.use('/api/contact', contactRoutes);
+
+// Admin routes
+app.use('/api/admin', adminRoutes);
+
 
 
 

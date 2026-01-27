@@ -149,3 +149,24 @@ export const getAdminEmailTemplate = (fullName, contactNumber, email, reason, me
     <a href="mailto:${email}" class="button" style="color: #ffffff;">Reply to Customer</a>
   </div>
 `);
+
+export const getPasswordResetTemplate = (resetUrl) => baseTemplate(`
+  <h2 style="color: #2d5a27; margin-top: 0;">Password Reset Request</h2>
+  <p>You requested to reset your password for the <strong>Daniry Admin Dashboard</strong>.</p>
+  <p>Click the button below to reset your password. This link will expire in 15 minutes.</p>
+  
+  <div style="text-align: center; margin: 30px 0;">
+    <a href="${resetUrl}" class="button" style="color: #ffffff;">Reset Password</a>
+  </div>
+  
+  <p style="color: #666; font-size: 14px;">
+    Or copy and paste this link into your browser:<br/>
+    <a href="${resetUrl}" style="color: #2d5a27;">${resetUrl}</a>
+  </p>
+  
+  <p style="color: #666; font-size: 14px; margin-top: 20px;">
+    If you didn't request this password reset, please ignore this email.
+  </p>
+  
+  <p style="margin-top: 25px;">Regards,<br/><strong>The Daniry Team</strong></p>
+`);
