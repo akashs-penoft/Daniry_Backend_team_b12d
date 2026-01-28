@@ -1,5 +1,5 @@
 import express from "express";
-import { submitPartnershipForm, getAllPartnershipEnquiries } from "../controllers/partnershipController.js";
+import { submitPartnershipForm, getAllPartnershipEnquiries, deletePartnershipEnquiry } from "../controllers/partnershipController.js";
 import { adminAuth } from "../middlewares/authMiddleware.js";
 
 const router = express.Router();
@@ -17,5 +17,8 @@ router.post("/", partnershipLimiter, submitPartnershipForm);
 
 // Admin: Get all partnership enquiries
 router.get("/admin/all", adminAuth, getAllPartnershipEnquiries);
+
+// Admin: Delete partnership enquiry
+router.delete("/admin/:id", adminAuth, deletePartnershipEnquiry);
 
 export default router;

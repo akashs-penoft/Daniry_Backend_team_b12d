@@ -51,3 +51,22 @@ export const getAllPartnershipEnquiries = async (req, res) => {
         return res.status(500).json({ message: "Internal server error" });
     }
 };
+// Admin Action: Delete a partnership enquiry
+export const deletePartnershipEnquiry = async (req, res) => {
+    const { id } = req.params;
+    try {
+        const [result] = await db.execute(
+            "DELETE FROM partnership_enquiries WHERE id = ?",
+            [id]
+        );
+
+        if (result.affectedRows === 0) {
+            return res.status(404).json({ message: "Enquiry not found" });
+        }
+
+        res.json({ message: "Partnership enquiry deleted successfully" });
+    } catch (error) {
+        console.error("Error deleting partnership enquiry:", error);
+        return res.status(500).json({ message: "Internal server error" });
+    }
+};
