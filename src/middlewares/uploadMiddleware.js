@@ -5,8 +5,9 @@ import fs from 'fs';
 // Ensure upload directories exist
 const testimonialDir = 'uploads/testimonials';
 const logoDir = 'uploads/settings';
+const faqCategoryDir = 'uploads/faq-categories';
 
-[testimonialDir, logoDir].forEach(dir => {
+[testimonialDir, logoDir, faqCategoryDir].forEach(dir => {
     if (!fs.existsSync(dir)) {
         fs.mkdirSync(dir, { recursive: true });
     }
@@ -16,13 +17,18 @@ const storage = multer.diskStorage({
     destination: (req, file, cb) => {
         if (file.fieldname === 'logo') {
             cb(null, logoDir);
+        } else if (file.fieldname === 'image') {
+            cb(null, faqCategoryDir);
         } else {
             cb(null, testimonialDir);
         }
     },
     filename: (req, file, cb) => {
         const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1E9);
-        const prefix = file.fieldname === 'logo' ? 'logo-' : 'testimonial-';
+        let prefix = 'testimonial-';
+        if (file.fieldname === 'logo') prefix = 'logo-';
+        if (file.fieldname === 'image') prefix = 'faq-cat-';
+
         cb(null, prefix + uniqueSuffix + path.extname(file.originalname));
     }
 });
@@ -50,3 +56,12 @@ export const uploadLogo = multer({
     limits: { fileSize: 2 * 1024 * 1024 }, // 2MB limit for logo
     fileFilter: fileFilter
 });
+
+export const uploadFaqImage = multer({
+    storage: storage,
+    limits: { fileSize: 5 * 1024 * 1024 }, // 5MB limit
+    fileFilter: fileFilter
+});
+
+
+
