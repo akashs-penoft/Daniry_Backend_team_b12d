@@ -6,6 +6,7 @@ import { db } from './src/configs/db.js';
 import contactRoutes from './src/routes/contactRoutes.js';
 import adminRoutes from './src/routes/adminRoutes.js';
 import testimonialRoutes from './src/routes/testimonialRoutes.js';
+import faqRoutes from './src/routes/faqRoutes.js';
 import settingsRoutes from './src/routes/settingsRoutes.js';
 import newsletterRoutes from './src/routes/newsletterRoutes.js';
 import partnershipRoutes from './src/routes/partnershipRoutes.js';
@@ -54,6 +55,9 @@ app.use('/api/admin', adminRoutes);
 
 // Testimonial routes
 app.use('/api/testimonials', testimonialRoutes);
+
+// FAQ routes
+app.use('/api/faqs', faqRoutes);
 
 // Settings routes
 app.use('/api/settings', settingsRoutes);
