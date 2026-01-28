@@ -178,11 +178,6 @@ export const getPasswordResetTemplate = (resetUrl) => baseTemplate(`
     <a href="${resetUrl}" class="button" style="color: #ffffff;">Reset Password</a>
   </div>
   
-  <p style="color: #666; font-size: 14px;">
-    Or copy and paste this link into your browser:<br/>
-    <a href="${resetUrl}" style="color: #2d5a27;">${resetUrl}</a>
-  </p>
-  
   <p style="color: #666; font-size: 14px; margin-top: 20px;">
     If you didn't request this password reset, please ignore this email.
   </p>
