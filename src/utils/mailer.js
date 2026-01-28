@@ -203,3 +203,42 @@ export const getNewsletterConfirmationTemplate = () => baseTemplate(`
   
   <p style="margin-top: 25px;">Stay healthy,<br/><strong>The Daniry Team</strong></p>
 `);
+
+export const getPartnerUserTemplate = (name) => baseTemplate(`
+  <h2 style="color: #40308a; margin-top: 0;">Hello ${name},</h2>
+  <p>Thank you for your interest in partnering with <strong>Daniry</strong>.</p>
+  <p>We have received your partnership enquiry and our business development team will review it and get back to you shortly.</p>
+  
+  <p style="margin-top: 25px;">Regards,<br/><strong>The Daniry Team</strong></p>
+`);
+
+export const getPartnerAdminTemplate = (name, email, phone, message) => baseTemplate(`
+  <h2 style="color: #40308a; margin-top: 0;">New Partnership Enquiry</h2>
+  <p>A new partnership request has been submitted.</p>
+  
+  <table class="details-table">
+    <tr>
+      <td class="label">Name:</td>
+      <td>${name}</td>
+    </tr>
+    <tr>
+      <td class="label">Phone:</td>
+      <td>${phone}</td>
+    </tr>
+    <tr>
+      <td class="label">Email:</td>
+      <td><a href="mailto:${email}" style="color: #40308a;">${email}</a></td>
+    </tr>
+  </table>
+  
+  <div class="divider"></div>
+  
+  <h3 style="font-size: 16px; color: #555;">Message:</h3>
+  <div style="background-color: #f9f9f9; padding: 15px; border-radius: 5px; border-left: 4px solid #40308a;">
+    <p style="margin: 0; color: #444;">${message}</p>
+  </div>
+  
+  <div style="text-align: center;">
+    <a href="mailto:${email}" class="button" style="color: #ffffff;">Reply to Partner</a>
+  </div>
+`);
