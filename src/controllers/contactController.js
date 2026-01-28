@@ -45,3 +45,16 @@ export const submitContactForm = async (req, res) => {
         return res.status(500).json({ message: "Failed to send email" });
     }
 };
+
+// Admin Action: Get all enquiries
+export const getAllEnquiries = async (req, res) => {
+    try {
+        const [rows] = await db.execute(
+            "SELECT * FROM enquiries ORDER BY created_at DESC"
+        );
+        res.json(rows);
+    } catch (error) {
+        console.error("Error fetching enquiries:", error);
+        res.status(500).json({ message: "Internal server error" });
+    }
+};

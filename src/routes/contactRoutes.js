@@ -1,5 +1,6 @@
 import express from "express"
-import { submitContactForm } from "../controllers/contactController.js"
+import { submitContactForm, getAllEnquiries } from "../controllers/contactController.js"
+import { adminAuth } from "../middlewares/authMiddleware.js"
 import rateLimit from "express-rate-limit"
 
 const router = express.Router()
@@ -11,5 +12,8 @@ const contactLimiter = rateLimit({
 });
 
 router.post("/", contactLimiter, submitContactForm)
+
+// Admin: Get all contact enquiries
+router.get("/admin/all", adminAuth, getAllEnquiries)
 
 export default router
