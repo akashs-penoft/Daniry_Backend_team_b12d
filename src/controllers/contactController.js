@@ -58,3 +58,15 @@ export const getAllEnquiries = async (req, res) => {
         res.status(500).json({ message: "Internal server error" });
     }
 };
+
+// Admin Action: Delete an enquiry
+export const deleteEnquiry = async (req, res) => {
+    const { id } = req.params;
+    try {
+        await db.execute("DELETE FROM enquiries WHERE id = ?", [id]);
+        res.json({ message: "Enquiry deleted successfully" });
+    } catch (error) {
+        console.error("Error deleting enquiry:", error);
+        res.status(500).json({ message: "Internal server error" });
+    }
+};

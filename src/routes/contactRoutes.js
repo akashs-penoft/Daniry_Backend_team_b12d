@@ -1,5 +1,5 @@
 import express from "express"
-import { submitContactForm, getAllEnquiries } from "../controllers/contactController.js"
+import { submitContactForm, getAllEnquiries, deleteEnquiry } from "../controllers/contactController.js"
 import { adminAuth } from "../middlewares/authMiddleware.js"
 import rateLimit from "express-rate-limit"
 
@@ -15,5 +15,8 @@ router.post("/", contactLimiter, submitContactForm)
 
 // Admin: Get all contact enquiries
 router.get("/admin/all", adminAuth, getAllEnquiries)
+
+// Admin: Delete an enquiry
+router.delete("/admin/:id", adminAuth, deleteEnquiry)
 
 export default router
