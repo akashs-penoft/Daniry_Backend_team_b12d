@@ -10,6 +10,7 @@ import faqRoutes from './src/routes/faqRoutes.js';
 import settingsRoutes from './src/routes/settingsRoutes.js';
 import newsletterRoutes from './src/routes/newsletterRoutes.js';
 import partnershipRoutes from './src/routes/partnershipRoutes.js';
+import productRoutes from './src/routes/productRoutes.js';
 import path from 'path';
 import { fileURLToPath } from 'url';
 
@@ -67,6 +68,9 @@ app.use('/api/newsletter', newsletterRoutes);
 
 // Partnership routes
 app.use('/api/partnership', partnershipRoutes);
+
+// Product routes
+app.use('/api/products', productRoutes);
 
 // Static files for uploads
 app.use('/uploads', express.static(path.join(__dirname, 'uploads')));

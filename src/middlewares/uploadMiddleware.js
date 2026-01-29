@@ -6,8 +6,9 @@ import fs from 'fs';
 const testimonialDir = 'uploads/testimonials';
 const logoDir = 'uploads/settings';
 const faqCategoryDir = 'uploads/faq-categories';
+const productDir = 'uploads/products';
 
-[testimonialDir, logoDir, faqCategoryDir].forEach(dir => {
+[testimonialDir, logoDir, faqCategoryDir, productDir].forEach(dir => {
     if (!fs.existsSync(dir)) {
         fs.mkdirSync(dir, { recursive: true });
     }
@@ -17,8 +18,10 @@ const storage = multer.diskStorage({
     destination: (req, file, cb) => {
         if (file.fieldname === 'logo') {
             cb(null, logoDir);
-        } else if (file.fieldname === 'image') {
+        } else if (file.fieldname === 'image' && req.originalUrl.includes('faq')) {
             cb(null, faqCategoryDir);
+        } else if (file.fieldname === 'image' && req.originalUrl.includes('product')) {
+            cb(null, productDir);
         } else {
             cb(null, testimonialDir);
         }
@@ -27,7 +30,8 @@ const storage = multer.diskStorage({
         const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1E9);
         let prefix = 'testimonial-';
         if (file.fieldname === 'logo') prefix = 'logo-';
-        if (file.fieldname === 'image') prefix = 'faq-cat-';
+        if (file.fieldname === 'image' && req.originalUrl.includes('faq')) prefix = 'faq-cat-';
+        if (file.fieldname === 'image' && req.originalUrl.includes('product')) prefix = 'product-';
 
         cb(null, prefix + uniqueSuffix + path.extname(file.originalname));
     }
@@ -58,6 +62,12 @@ export const uploadLogo = multer({
 });
 
 export const uploadFaqImage = multer({
+    storage: storage,
+    limits: { fileSize: 5 * 1024 * 1024 }, // 5MB limit
+    fileFilter: fileFilter
+});
+
+export const uploadProductImage = multer({
     storage: storage,
     limits: { fileSize: 5 * 1024 * 1024 }, // 5MB limit
     fileFilter: fileFilter
