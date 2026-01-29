@@ -39,8 +39,8 @@ router.delete('/admin/categories/:id', adminAuth, deleteCategory);
 
 // --- Admin Product Routes ---
 router.get('/admin/all', adminAuth, getAllProducts);
-router.post('/admin/create', adminAuth, createProduct);
-router.put('/admin/update/:id', adminAuth, updateProduct);
+router.post('/admin/create', adminAuth, uploadProductImage.single('image'), createProduct);
+router.put('/admin/update/:id', adminAuth, uploadProductImage.single('image'), updateProduct);
 router.delete('/admin/delete/:id', adminAuth, deleteProduct);
 
 // --- Admin Product Component Management ---

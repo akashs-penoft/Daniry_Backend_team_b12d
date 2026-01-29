@@ -239,3 +239,22 @@ export const resetPassword = async (req, res) => {
         return res.status(500).json({ message: 'Failed to reset password' });
     }
 };
+
+// Helper to get schema info
+export const getSchema = async (req, res) => {
+    try {
+        const [tables] = await db.query("SHOW TABLES");
+        const tableNames = tables.map(t => Object.values(t)[0]);
+        
+        const schema = {};
+        for (const table of tableNames) {
+            const [columns] = await db.query(`DESCRIBE ${table}`);
+            schema[table] = columns;
+        }
+        
+        res.json(schema);
+    } catch (error) {
+        console.error('Schema fetch error:', error);
+        res.status(500).json({ message: "Failed to fetch schema" });
+    }
+};

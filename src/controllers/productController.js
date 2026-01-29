@@ -25,6 +25,7 @@ export const createProduct = async (req, res) => {
             category_id, name, slug, short_description, 
             description, ingredients, has_stages, has_variants, is_active 
         } = req.body;
+        const image_url = req.file ? `/uploads/products/${req.file.filename}` : null;
 
         if (!category_id || !name || !slug) {
             return res.status(400).json({ message: 'Category, name, and slug are required' });
@@ -32,10 +33,10 @@ export const createProduct = async (req, res) => {
 
         const [result] = await db.execute(
             `INSERT INTO products 
-            (category_id, name, slug, short_description, description, ingredients, has_stages, has_variants, is_active) 
-            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+            (category_id, name, slug, image_url, short_description, description, ingredients, has_stages, has_variants, is_active) 
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
             [
-                category_id, name, slug, short_description || null, 
+                category_id, name, slug, image_url, short_description || null, 
                 description || null, ingredients || null, 
                 has_stages ?? 0, has_variants ?? 0, is_active ?? 1
             ]
@@ -59,19 +60,21 @@ export const updateProduct = async (req, res) => {
             category_id, name, slug, short_description, 
             description, ingredients, has_stages, has_variants, is_active 
         } = req.body;
-
-        const [existing] = await db.execute('SELECT id FROM products WHERE id = ?', [id]);
+        
+        const [existing] = await db.execute('SELECT id, image_url FROM products WHERE id = ?', [id]);
         if (existing.length === 0) {
             return res.status(404).json({ message: 'Product not found' });
         }
 
+        const image_url = req.file ? `/uploads/products/${req.file.filename}` : existing[0].image_url;
+
         await db.execute(
             `UPDATE products SET 
-            category_id = ?, name = ?, slug = ?, short_description = ?, 
+            category_id = ?, name = ?, slug = ?, image_url = ?, short_description = ?, 
             description = ?, ingredients = ?, has_stages = ?, has_variants = ?, is_active = ? 
             WHERE id = ?`,
             [
-                category_id, name, slug, short_description, 
+                category_id, name, slug, image_url, short_description, 
                 description, ingredients, has_stages ?? 0, has_variants ?? 0, is_active ?? 1, id
             ]
         );
@@ -116,7 +119,7 @@ export const getProductComponents = async (req, res) => {
         
         const [options] = await db.execute('SELECT * FROM product_options WHERE product_id = ? ORDER BY sort_order ASC', [id]);
         const [highlights] = await db.execute('SELECT * FROM product_highlights WHERE product_id = ? ORDER BY sort_order ASC', [id]);
-        const [nutrients] = await db.execute('SELECT * FROM product_nutrients WHERE product_id = ? ORDER BY sort_order ASC', [id]);
+        const [nutrients] = await db.execute('SELECT *, nutrient_name as nutrient FROM product_nutrients WHERE product_id = ? ORDER BY sort_order ASC', [id]);
 
         res.json({ options, highlights, nutrients });
     } catch (error) {
@@ -200,7 +203,12 @@ export const manageProductNutrients = async (req, res) => {
 
         if (nutrients && nutrients.length > 0) {
             const insertQuery = `INSERT INTO product_nutrients (product_id, nutrient_name, nutrient_value, sort_order) VALUES ?`;
-            const values = nutrients.map(n => [id, n.nutrient_name, n.nutrient_value, n.sort_order || 0]);
+            const values = nutrients.map(n => [
+                id, 
+                n.nutrient || n.nutrient_name, 
+                n.nutrient_value || '', 
+                n.sort_order || 0
+            ]);
             await connection.query(insertQuery, [values]);
         }
 
@@ -304,7 +312,7 @@ export const getProductDetails = async (req, res) => {
         // Fetch related data
         const [options] = await db.execute('SELECT * FROM product_options WHERE product_id = ? AND is_active = 1 ORDER BY sort_order ASC', [productId]);
         const [highlights] = await db.execute('SELECT * FROM product_highlights WHERE product_id = ? ORDER BY sort_order ASC', [productId]);
-        const [nutrients] = await db.execute('SELECT * FROM product_nutrients WHERE product_id = ? ORDER BY sort_order ASC', [productId]);
+        const [nutrients] = await db.execute('SELECT *, nutrient_name as nutrient FROM product_nutrients WHERE product_id = ? ORDER BY sort_order ASC', [productId]);
         const [reviews] = await db.execute('SELECT * FROM product_reviews WHERE product_id = ? AND is_approved = 1 ORDER BY created_at DESC', [productId]);
 
         res.json({
