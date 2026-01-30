@@ -277,7 +277,10 @@ export const getProductListing = async (req, res) => {
         const listing = await Promise.all(categories.map(async (cat) => {
             const [products] = await db.execute(`
                 SELECT p.id, p.name, p.slug, p.short_description, p.avg_rating, p.review_count,
-                       (SELECT image FROM product_options WHERE product_id = p.id AND is_active = 1 ORDER BY sort_order ASC LIMIT 1) as image
+                       COALESCE(
+                           (SELECT image FROM product_options WHERE product_id = p.id AND is_active = 1 ORDER BY sort_order ASC LIMIT 1),
+                           p.image_url
+                       ) as image
                 FROM products p
                 WHERE p.category_id = ? AND p.is_active = 1
             `, [cat.id]);
