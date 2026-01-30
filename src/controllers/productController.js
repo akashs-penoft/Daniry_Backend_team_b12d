@@ -61,12 +61,13 @@ export const updateProduct = async (req, res) => {
             description, ingredients, has_stages, has_variants, is_active 
         } = req.body;
         
-        const [existing] = await db.execute('SELECT id, image_url FROM products WHERE id = ?', [id]);
+        const [existing] = await db.execute('SELECT * FROM products WHERE id = ?', [id]);
         if (existing.length === 0) {
             return res.status(404).json({ message: 'Product not found' });
         }
 
-        const image_url = req.file ? `/uploads/products/${req.file.filename}` : existing[0].image_url;
+        const product = existing[0];
+        const image_url = req.file ? `/uploads/products/${req.file.filename}` : product.image_url;
 
         await db.execute(
             `UPDATE products SET 
@@ -74,8 +75,17 @@ export const updateProduct = async (req, res) => {
             description = ?, ingredients = ?, has_stages = ?, has_variants = ?, is_active = ? 
             WHERE id = ?`,
             [
-                category_id, name, slug, image_url, short_description, 
-                description, ingredients, has_stages ?? 0, has_variants ?? 0, is_active ?? 1, id
+                category_id ?? product.category_id, 
+                name ?? product.name, 
+                slug ?? product.slug, 
+                image_url, 
+                short_description ?? product.short_description, 
+                description ?? product.description, 
+                ingredients ?? product.ingredients, 
+                has_stages ?? product.has_stages, 
+                has_variants ?? product.has_variants, 
+                is_active ?? product.is_active, 
+                id
             ]
         );
 
@@ -176,7 +186,7 @@ export const manageProductHighlights = async (req, res) => {
 
         if (highlights && highlights.length > 0) {
             const insertQuery = `INSERT INTO product_highlights (product_id, highlight, sort_order) VALUES ?`;
-            const values = highlights.map(h => [id, h.highlight, h.sort_order || 0]);
+            const values = highlights.map(h => [id, h.highlight || null, h.sort_order || 0]);
             await connection.query(insertQuery, [values]);
         }
 
