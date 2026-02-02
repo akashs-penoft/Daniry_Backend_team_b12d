@@ -21,9 +21,9 @@ export const getAllProducts = async (req, res) => {
 // Create Product
 export const createProduct = async (req, res) => {
     try {
-        const { 
-            category_id, name, slug, short_description, 
-            description, ingredients, has_stages, has_variants, is_active 
+        const {
+            category_id, name, slug, short_description,
+            description, ingredients, has_stages, has_variants, is_active
         } = req.body;
         const image_url = req.file ? `/uploads/products/${req.file.filename}` : null;
 
@@ -36,8 +36,8 @@ export const createProduct = async (req, res) => {
             (category_id, name, slug, image_url, short_description, description, ingredients, has_stages, has_variants, is_active) 
             VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
             [
-                category_id, name, slug, image_url, short_description || null, 
-                description || null, ingredients || null, 
+                category_id, name, slug, image_url, short_description || null,
+                description || null, ingredients || null,
                 has_stages ?? 0, has_variants ?? 0, is_active ?? 1
             ]
         );
@@ -56,11 +56,11 @@ export const createProduct = async (req, res) => {
 export const updateProduct = async (req, res) => {
     try {
         const { id } = req.params;
-        const { 
-            category_id, name, slug, short_description, 
-            description, ingredients, has_stages, has_variants, is_active 
+        const {
+            category_id, name, slug, short_description,
+            description, ingredients, has_stages, has_variants, is_active
         } = req.body;
-        
+
         const [existing] = await db.execute('SELECT * FROM products WHERE id = ?', [id]);
         if (existing.length === 0) {
             return res.status(404).json({ message: 'Product not found' });
@@ -75,16 +75,16 @@ export const updateProduct = async (req, res) => {
             description = ?, ingredients = ?, has_stages = ?, has_variants = ?, is_active = ? 
             WHERE id = ?`,
             [
-                category_id ?? product.category_id, 
-                name ?? product.name, 
-                slug ?? product.slug, 
-                image_url, 
-                short_description ?? product.short_description, 
-                description ?? product.description, 
-                ingredients ?? product.ingredients, 
-                has_stages ?? product.has_stages, 
-                has_variants ?? product.has_variants, 
-                is_active ?? product.is_active, 
+                category_id ?? product.category_id,
+                name ?? product.name,
+                slug ?? product.slug,
+                image_url,
+                short_description ?? product.short_description,
+                description ?? product.description,
+                ingredients ?? product.ingredients,
+                has_stages ?? product.has_stages,
+                has_variants ?? product.has_variants,
+                is_active ?? product.is_active,
                 id
             ]
         );
@@ -101,22 +101,36 @@ export const updateProduct = async (req, res) => {
 
 // Delete Product
 export const deleteProduct = async (req, res) => {
+    const connection = await db.getConnection();
     try {
         const { id } = req.params;
 
-        // Note: Related data in product_options, product_highlights, etc. should be handled.
-        // If the DB has ON DELETE CASCADE, it's fine. If not, we need to handle it.
-        // Let's assume we handle it here or have CASCADE.
-        
-        const [result] = await db.execute('DELETE FROM products WHERE id = ?', [id]);
-        if (result.affectedRows === 0) {
+        await connection.beginTransaction();
+
+        // Check if product exists
+        const [existing] = await connection.execute('SELECT * FROM products WHERE id = ?', [id]);
+        if (existing.length === 0) {
+            await connection.rollback();
             return res.status(404).json({ message: 'Product not found' });
         }
 
+        // Delete related records first (to handle foreign key constraints)
+        await connection.execute('DELETE FROM product_reviews WHERE product_id = ?', [id]);
+        await connection.execute('DELETE FROM product_nutrients WHERE product_id = ?', [id]);
+        await connection.execute('DELETE FROM product_highlights WHERE product_id = ?', [id]);
+        await connection.execute('DELETE FROM product_options WHERE product_id = ?', [id]);
+
+        // Now delete the product itself
+        await connection.execute('DELETE FROM products WHERE id = ?', [id]);
+
+        await connection.commit();
         res.json({ message: 'Product deleted successfully' });
     } catch (error) {
+        await connection.rollback();
         console.error('Error deleting product:', error);
         return res.status(500).json({ message: 'Internal server error' });
+    } finally {
+        connection.release();
     }
 };
 
@@ -126,7 +140,7 @@ export const deleteProduct = async (req, res) => {
 export const getProductComponents = async (req, res) => {
     try {
         const { id } = req.params;
-        
+
         const [options] = await db.execute('SELECT * FROM product_options WHERE product_id = ? ORDER BY sort_order ASC', [id]);
         const [highlights] = await db.execute('SELECT * FROM product_highlights WHERE product_id = ? ORDER BY sort_order ASC', [id]);
         const [nutrients] = await db.execute('SELECT *, nutrient_name as nutrient FROM product_nutrients WHERE product_id = ? ORDER BY sort_order ASC', [id]);
@@ -154,9 +168,9 @@ export const manageProductOptions = async (req, res) => {
             const insertQuery = `INSERT INTO product_options 
                 (product_id, option_type, title, subtitle, age_range, image, sort_order, is_active) 
                 VALUES ?`;
-            
+
             const values = options.map(opt => [
-                id, opt.option_type, opt.title, opt.subtitle || null, 
+                id, opt.option_type, opt.title, opt.subtitle || null,
                 opt.age_range || null, opt.image || null, opt.sort_order || 0, opt.is_active ?? 1
             ]);
 
@@ -214,9 +228,9 @@ export const manageProductNutrients = async (req, res) => {
         if (nutrients && nutrients.length > 0) {
             const insertQuery = `INSERT INTO product_nutrients (product_id, nutrient_name, nutrient_value, sort_order) VALUES ?`;
             const values = nutrients.map(n => [
-                id, 
-                n.nutrient || n.nutrient_name, 
-                n.nutrient_value || '', 
+                id,
+                n.nutrient || n.nutrient_name,
+                n.nutrient_value || '',
                 n.sort_order || 0
             ]);
             await connection.query(insertQuery, [values]);
@@ -283,7 +297,7 @@ export const getProductListing = async (req, res) => {
     try {
         // Fetch categories with their active products
         const [categories] = await db.execute('SELECT * FROM product_categories WHERE is_active = 1');
-        
+
         const listing = await Promise.all(categories.map(async (cat) => {
             const [products] = await db.execute(`
                 SELECT p.id, p.name, p.slug, p.short_description, p.avg_rating, p.review_count,
@@ -294,7 +308,7 @@ export const getProductListing = async (req, res) => {
                 FROM products p
                 WHERE p.category_id = ? AND p.is_active = 1
             `, [cat.id]);
-            
+
             return {
                 ...cat,
                 products
@@ -312,13 +326,13 @@ export const getProductListing = async (req, res) => {
 export const getProductDetails = async (req, res) => {
     try {
         const { slug } = req.params;
-        
+
         // Fetch product
         const [products] = await db.execute('SELECT * FROM products WHERE slug = ? AND is_active = 1', [slug]);
         if (products.length === 0) {
             return res.status(404).json({ message: 'Product not found' });
         }
-        
+
         const product = products[0];
         const productId = product.id;
 
@@ -337,6 +351,27 @@ export const getProductDetails = async (req, res) => {
         });
     } catch (error) {
         console.error('Error fetching product details:', error);
+        return res.status(500).json({ message: 'Internal server error' });
+    }
+};
+
+// Get Products by Category (Frontend - for stage navigation)
+export const getProductsByCategory = async (req, res) => {
+    try {
+        const { categoryId } = req.params;
+
+        const [products] = await db.execute(`
+            SELECT p.id, p.name, p.slug, p.category_id,
+                   po.title as stage_title, po.subtitle as stage_subtitle, po.age_range
+            FROM products p
+            LEFT JOIN product_options po ON p.id = po.product_id AND po.is_active = 1
+            WHERE p.category_id = ? AND p.is_active = 1
+            ORDER BY p.id ASC
+        `, [categoryId]);
+
+        res.json(products);
+    } catch (error) {
+        console.error('Error fetching products by category:', error);
         return res.status(500).json({ message: 'Internal server error' });
     }
 };
