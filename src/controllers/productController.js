@@ -290,6 +290,23 @@ export const addReview = async (req, res) => {
     }
 };
 
+// Get All Product Reviews (Public)
+export const getAllProductReviews = async (req, res) => {
+    try {
+        const [reviews] = await db.execute(`
+            SELECT pr.*, p.name as product_name, p.slug as product_slug
+            FROM product_reviews pr
+            JOIN products p ON pr.product_id = p.id
+            WHERE pr.is_approved = 1
+            ORDER BY pr.created_at DESC
+        `);
+        res.json(reviews);
+    } catch (error) {
+        console.error('Error fetching all product reviews:', error);
+        return res.status(500).json({ message: 'Internal server error' });
+    }
+};
+
 // --- Public Actions ---
 
 // Get Product Listing (Frontend)

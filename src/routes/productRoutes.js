@@ -16,6 +16,7 @@ import {
     manageProductHighlights,
     manageProductNutrients,
     addReview,
+    getAllProductReviews,
     getProductListing,
     getProductDetails,
     getProductsByCategory
@@ -30,6 +31,7 @@ router.get('/listing', getProductListing);
 router.get('/details/:slug', getProductDetails);
 router.get('/by-category/:categoryId', getProductsByCategory);
 router.post('/review/:id', addReview);
+router.get('/reviews/all', getAllProductReviews);
 router.get('/categories', getAllCategories);
 router.get('/categories/:slug', getCategoryBySlug);
 
