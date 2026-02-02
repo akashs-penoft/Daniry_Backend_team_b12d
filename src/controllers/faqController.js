@@ -154,6 +154,36 @@ export const deleteCategory = async (req, res) => {
     }
 };
 
+// Reorder Categories
+export const reorderCategories = async (req, res) => {
+    const connection = await db.getConnection();
+    try {
+        const { orders } = req.body; // Array of { id, sort_order }
+
+        if (!orders || !Array.isArray(orders)) {
+            return res.status(400).json({ message: 'Orders array is required' });
+        }
+
+        await connection.beginTransaction();
+
+        for (const order of orders) {
+            await connection.execute(
+                'UPDATE faq_categories SET sort_order = ? WHERE id = ?',
+                [order.sort_order, order.id]
+            );
+        }
+
+        await connection.commit();
+        res.json({ message: 'Categories reordered successfully' });
+    } catch (error) {
+        await connection.rollback();
+        console.error('Error reordering FAQ categories:', error);
+        return res.status(500).json({ message: 'Internal server error' });
+    } finally {
+        connection.release();
+    }
+};
+
 // --- Admin Actions ---
 
 // Get All FAQs (Admin Dashboard)
