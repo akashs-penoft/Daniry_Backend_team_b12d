@@ -293,14 +293,31 @@ export const addReview = async (req, res) => {
 // Get All Product Reviews (Public)
 export const getAllProductReviews = async (req, res) => {
     try {
+        const { page = 1, limit = 4 } = req.query;
+        const offset = (page - 1) * limit;
+
         const [reviews] = await db.execute(`
             SELECT pr.*, p.name as product_name, p.slug as product_slug
             FROM product_reviews pr
             JOIN products p ON pr.product_id = p.id
             WHERE pr.is_approved = 1
             ORDER BY pr.created_at DESC
-        `);
-        res.json(reviews);
+            LIMIT ? OFFSET ?
+        `, [String(limit), String(offset)]);
+
+        // Get total count
+        const [totalRows] = await db.execute('SELECT COUNT(*) as total FROM product_reviews WHERE is_approved = 1');
+        const total = totalRows[0].total;
+
+        res.json({
+            data: reviews,
+            pagination: {
+                total,
+                page: Number(page),
+                limit: Number(limit),
+                hasMore: offset + reviews.length < total
+            }
+        });
     } catch (error) {
         console.error('Error fetching all product reviews:', error);
         return res.status(500).json({ message: 'Internal server error' });
@@ -312,6 +329,8 @@ export const getAllProductReviews = async (req, res) => {
 // Get Product Listing (Frontend)
 export const getProductListing = async (req, res) => {
     try {
+        const { limit = 100 } = req.query; // Default to 100 products per category for now
+
         // Fetch categories with their active products
         const [categories] = await db.execute('SELECT * FROM product_categories WHERE is_active = 1');
 
@@ -324,7 +343,8 @@ export const getProductListing = async (req, res) => {
                        ) as image
                 FROM products p
                 WHERE p.category_id = ? AND p.is_active = 1
-            `, [cat.id]);
+                LIMIT ?
+            `, [cat.id, String(limit)]);
 
             return {
                 ...cat,

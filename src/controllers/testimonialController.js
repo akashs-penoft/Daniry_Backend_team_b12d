@@ -33,10 +33,27 @@ export const submitTestimonial = async (req, res) => {
 // Get Approved Testimonials (Frontend)
 export const getApprovedTestimonials = async (req, res) => {
     try {
+        const { page = 1, limit = 4 } = req.query;
+        const offset = (page - 1) * limit;
+
         const [rows] = await db.execute(
-            'SELECT id, name, content, rating, image_url FROM testimonials WHERE is_approved = 1 ORDER BY display_order ASC'
+            'SELECT id, name, content, rating, image_url FROM testimonials WHERE is_approved = 1 ORDER BY created_at DESC LIMIT ? OFFSET ?',
+            [String(limit), String(offset)]
         );
-        res.json(rows);
+
+        // Get total count for frontend to know if there's more
+        const [totalRows] = await db.execute('SELECT COUNT(*) as total FROM testimonials WHERE is_approved = 1');
+        const total = totalRows[0].total;
+
+        res.json({
+            data: rows,
+            pagination: {
+                total,
+                page: Number(page),
+                limit: Number(limit),
+                hasMore: offset + rows.length < total
+            }
+        });
     } catch (error) {
         console.error('Error fetching testimonials:', error);
         res.status(500).json({ message: 'Internal server error' });
@@ -48,7 +65,7 @@ export const getApprovedTestimonials = async (req, res) => {
 // Get All Testimonials (Admin Dashboard)
 export const getAllTestimonials = async (req, res) => {
     try {
-        const [rows] = await db.execute('SELECT * FROM testimonials ORDER BY display_order ASC');
+        const [rows] = await db.execute('SELECT * FROM testimonials ORDER BY created_at DESC');
         res.json(rows);
     } catch (error) {
         console.error('Error fetching testimonials for admin:', error);
