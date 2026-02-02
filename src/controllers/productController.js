@@ -335,6 +335,13 @@ export const getProductListing = async (req, res) => {
         const [categories] = await db.execute('SELECT * FROM product_categories WHERE is_active = 1');
 
         const listing = await Promise.all(categories.map(async (cat) => {
+            // Get total product count for this category
+            const [countResult] = await db.execute(
+                'SELECT COUNT(*) as total FROM products WHERE category_id = ? AND is_active = 1',
+                [cat.id]
+            );
+            const totalProducts = countResult[0].total;
+
             const [products] = await db.execute(`
                 SELECT p.id, p.name, p.slug, p.short_description, p.avg_rating, p.review_count,
                        COALESCE(
@@ -348,6 +355,7 @@ export const getProductListing = async (req, res) => {
 
             return {
                 ...cat,
+                total_products: totalProducts,
                 products
             };
         }));
@@ -355,6 +363,56 @@ export const getProductListing = async (req, res) => {
         res.json(listing);
     } catch (error) {
         console.error('Error fetching product listing:', error);
+        return res.status(500).json({ message: 'Internal server error' });
+    }
+};
+
+// Get Products by Category Slug (Frontend - for Category Page with Pagination)
+export const getCategoryProducts = async (req, res) => {
+    try {
+        const { slug } = req.params;
+        const { page = 1, limit = 9 } = req.query;
+        const offset = (Number(page) - 1) * Number(limit);
+
+        // Fetch category details
+        const [categoryRows] = await db.execute('SELECT * FROM product_categories WHERE slug = ? AND is_active = 1', [slug]);
+        if (categoryRows.length === 0) {
+            return res.status(404).json({ message: 'Category not found' });
+        }
+        const category = categoryRows[0];
+
+        // Fetch products for this category
+        const [products] = await db.execute(`
+            SELECT p.id, p.name, p.slug, p.short_description, p.avg_rating, p.review_count,
+                   COALESCE(
+                       (SELECT image FROM product_options WHERE product_id = p.id AND is_active = 1 ORDER BY sort_order ASC LIMIT 1),
+                       p.image_url
+                   ) as image
+            FROM products p
+            WHERE p.category_id = ? AND p.is_active = 1
+            ORDER BY p.id ASC
+            LIMIT ? OFFSET ?
+        `, [category.id, String(limit), String(offset)]);
+
+        // Get total count
+        const [countResult] = await db.execute(
+            'SELECT COUNT(*) as total FROM products WHERE category_id = ? AND is_active = 1',
+            [category.id]
+        );
+        const total = countResult[0].total;
+
+        res.json({
+            category,
+            data: products,
+            pagination: {
+                total,
+                page: Number(page),
+                limit: Number(limit),
+                hasMore: offset + products.length < total
+            }
+        });
+    } catch (error) {
+        console.error('Error fetching category products:', error);
         return res.status(500).json({ message: 'Internal server error' });
     }
 };
