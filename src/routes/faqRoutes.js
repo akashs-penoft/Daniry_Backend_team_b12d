@@ -9,6 +9,7 @@ import {
     createCategory,
     updateCategory,
     deleteCategory,
+    reorderCategories,
     getAllCategories,
     getCategoryById
 } from '../controllers/faqController.js';
@@ -30,6 +31,7 @@ router.put('/admin/reorder', adminAuth, reorderFAQs);
 
 // Category Routes (Admin)
 router.get('/admin/categories', adminAuth, getAllCategories);
+router.put('/admin/categories/reorder', adminAuth, reorderCategories);
 router.get('/admin/categories/:id', adminAuth, getCategoryById);
 router.post('/admin/categories', adminAuth, uploadFaqImage.single('image'), createCategory);
 router.put('/admin/categories/:id', adminAuth, uploadFaqImage.single('image'), updateCategory);
