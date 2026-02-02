@@ -17,7 +17,8 @@ import {
     manageProductNutrients,
     addReview,
     getProductListing,
-    getProductDetails
+    getProductDetails,
+    getProductsByCategory
 } from '../controllers/productController.js';
 import { adminAuth } from '../middlewares/authMiddleware.js';
 import { uploadProductImage } from '../middlewares/uploadMiddleware.js';
@@ -27,6 +28,7 @@ const router = express.Router();
 // --- Public Routes ---
 router.get('/listing', getProductListing);
 router.get('/details/:slug', getProductDetails);
+router.get('/by-category/:categoryId', getProductsByCategory);
 router.post('/review/:id', addReview);
 router.get('/categories', getAllCategories);
 router.get('/categories/:slug', getCategoryBySlug);
