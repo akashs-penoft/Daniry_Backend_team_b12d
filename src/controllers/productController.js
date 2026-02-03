@@ -347,7 +347,9 @@ export const getProductListing = async (req, res) => {
                        COALESCE(
                            (SELECT image FROM product_options WHERE product_id = p.id AND is_active = 1 ORDER BY sort_order ASC LIMIT 1),
                            p.image_url
-                       ) as image
+                       ) as image,
+                       (SELECT title FROM product_options WHERE product_id = p.id AND is_active = 1 ORDER BY sort_order ASC LIMIT 1) as option_title,
+                       (SELECT age_range FROM product_options WHERE product_id = p.id AND is_active = 1 ORDER BY sort_order ASC LIMIT 1) as option_age_range
                 FROM products p
                 WHERE p.category_id = ? AND p.is_active = 1
                 LIMIT ?
@@ -387,7 +389,9 @@ export const getCategoryProducts = async (req, res) => {
                    COALESCE(
                        (SELECT image FROM product_options WHERE product_id = p.id AND is_active = 1 ORDER BY sort_order ASC LIMIT 1),
                        p.image_url
-                   ) as image
+                   ) as image,
+                   (SELECT title FROM product_options WHERE product_id = p.id AND is_active = 1 ORDER BY sort_order ASC LIMIT 1) as option_title,
+                   (SELECT age_range FROM product_options WHERE product_id = p.id AND is_active = 1 ORDER BY sort_order ASC LIMIT 1) as option_age_range
             FROM products p
             WHERE p.category_id = ? AND p.is_active = 1
             ORDER BY p.id ASC
