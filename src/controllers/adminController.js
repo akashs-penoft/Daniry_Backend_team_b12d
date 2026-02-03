@@ -107,10 +107,9 @@ export const requestPasswordReset = async (req, res) => {
             [email]
         );
 
-        // Always return success message (don't reveal if email exists)
         if (admins.length === 0) {
-            return res.json({
-                message: 'If an account with that email exists, a password reset link has been sent.'
+            return res.status(404).json({
+                message: 'No admin account found with this email address.'
             });
         }
 
@@ -147,7 +146,7 @@ export const requestPasswordReset = async (req, res) => {
         });
 
         res.json({
-            message: 'If an account with that email exists, a password reset link has been sent.'
+            message: 'A password reset link has been sent to your email address.'
         });
 
     } catch (error) {
@@ -190,6 +189,51 @@ export const verifyResetToken = async (req, res) => {
     } catch (error) {
         console.error('Token verification error:', error);
         return res.status(500).json({ message: 'Failed to verify token' });
+    }
+};
+
+// Admin Update Password (Logged In)
+export const updatePassword = async (req, res) => {
+    const { currentPassword, newPassword } = req.body;
+    const adminId = req.admin.id;
+
+    if (!currentPassword || !newPassword) {
+        return res.status(400).json({ message: "Both current and new passwords are required" });
+    }
+
+    try {
+        // Fetch admin with current password hash
+        const [rows] = await db.query(
+            "SELECT password_hash FROM admins WHERE id = ?",
+            [adminId]
+        );
+
+        if (!rows.length) {
+            return res.status(404).json({ message: "Admin not found" });
+        }
+
+        const admin = rows[0];
+        
+        // Verify current password
+        const isMatch = await bcrypt.compare(currentPassword, admin.password_hash);
+        if (!isMatch) {
+            return res.status(401).json({ message: "Incorrect current password" });
+        }
+
+        // Hash new password
+        const salt = await bcrypt.genSalt(10);
+        const hashedPassword = await bcrypt.hash(newPassword, salt);
+
+        // Update password in DB
+        await db.execute(
+            "UPDATE admins SET password_hash = ? WHERE id = ?",
+            [hashedPassword, adminId]
+        );
+
+        res.json({ message: "Password updated successfully" });
+    } catch (error) {
+        console.error('Update password error:', error);
+        return res.status(500).json({ message: "Failed to update password" });
     }
 };
 

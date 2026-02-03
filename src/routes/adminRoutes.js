@@ -7,7 +7,8 @@ import {
     requestPasswordReset, 
     verifyResetToken, 
     resetPassword,
-    getSchema
+    getSchema,
+    updatePassword
 } from "../controllers/adminController.js";
 import { adminAuth } from "../middlewares/authMiddleware.js";
 
@@ -20,7 +21,8 @@ router.post("/logout", adminLogout);
 router.get("/me", adminAuth, checkAdmin);
 router.get("/schema", getSchema);
 
-// Password Reset
+// Password Management
+router.put("/update-password", adminAuth, updatePassword);
 router.post("/forgot-password", requestPasswordReset);
 router.get("/verify-reset-token/:token", verifyResetToken);
 router.post("/reset-password", resetPassword);
