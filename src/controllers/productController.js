@@ -200,7 +200,7 @@ export const manageProductHighlights = async (req, res) => {
 
         if (highlights && highlights.length > 0) {
             const insertQuery = `INSERT INTO product_highlights (product_id, highlight, sort_order) VALUES ?`;
-            const values = highlights.map(h => [id, h.highlight || null, h.sort_order || 0]);
+            const values = highlights.map(h => [id, h.highlight || '', h.sort_order || 0]);
             await connection.query(insertQuery, [values]);
         }
 
