@@ -47,12 +47,14 @@ export const getApprovedTestimonials = async (req, res, next) => {
 
         res.json({
             success: true,
-            data: rows,
-            pagination: {
-                total,
-                page: Number(page),
-                limit: Number(limit),
-                hasMore: offset + rows.length < total
+            data: {
+                data: rows,
+                pagination: {
+                    total,
+                    page: Number(page),
+                    limit: Number(limit),
+                    hasMore: offset + rows.length < total
+                }
             }
         });
     } catch (error) {

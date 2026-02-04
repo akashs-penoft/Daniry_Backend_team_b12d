@@ -302,12 +302,14 @@ export const getAllProductReviews = async (req, res, next) => {
 
         res.json({
             success: true,
-            data: reviews,
-            pagination: {
-                total,
-                page: Number(page),
-                limit: Number(limit),
-                hasMore: offset + reviews.length < total
+            data: {
+                data: reviews,
+                pagination: {
+                    total,
+                    page: Number(page),
+                    limit: Number(limit),
+                    hasMore: offset + reviews.length < total
+                }
             }
         });
     } catch (error) {

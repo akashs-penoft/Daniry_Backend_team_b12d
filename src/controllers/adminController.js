@@ -88,7 +88,7 @@ export const adminLogout = (req, res) => {
 // Admin Check Authentication------
 export const checkAdmin = async (req, res) => {
     // If the request reached here, the auth middleware already verified the token
-    return res.json({ success: true, authenticated: true, data: { admin: req.admin } });
+    return res.json({ success: true, data: { authenticated: true, admin: req.admin } });
 };
 
 // Admin Request Password Reset------
@@ -177,15 +177,17 @@ export const verifyResetToken = async (req, res, next) => {
         if (tokens.length === 0) {
             return res.status(400).json({
                 success: false,
-                valid: false,
+                data: { valid: false },
                 message: 'Invalid or expired reset token'
             });
         }
 
         res.json({
             success: true,
-            valid: true,
-            data: { email: tokens[0].email }
+            data: {
+                valid: true,
+                email: tokens[0].email
+            }
         });
 
     } catch (error) {
