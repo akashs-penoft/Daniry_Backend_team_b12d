@@ -1,11 +1,11 @@
 import { db } from "../configs/db.js";
 import { transporter, getPartnerUserTemplate, getPartnerAdminTemplate } from "../utils/mailer.js";
 
-export const submitPartnershipForm = async (req, res) => {
+export const submitPartnershipForm = async (req, res, next) => {
     const { name, email, phone, message } = req.body;
 
     if (!name || !email || !phone || !message) {
-        return res.status(400).json({ message: "All fields are required" });
+        return res.status(400).json({ success: false, message: "All fields are required" });
     }
 
     try {
@@ -31,28 +31,26 @@ export const submitPartnershipForm = async (req, res) => {
             html: getPartnerUserTemplate(name)
         });
 
-        res.json({ message: "Partnership enquiry submitted successfully" });
+        res.json({ success: true, message: "Partnership enquiry submitted successfully" });
 
     } catch (error) {
-        console.error("Partnership error:", error);
-        return res.status(500).json({ message: "Failed to submit enquiry" });
+        next(error);
     }
 };
 
 // Admin Action: Get all partnership enquiries
-export const getAllPartnershipEnquiries = async (req, res) => {
+export const getAllPartnershipEnquiries = async (req, res, next) => {
     try {
         const [rows] = await db.execute(
             "SELECT * FROM partnership_enquiries ORDER BY created_at DESC"
         );
-        res.json(rows);
+        res.json({ success: true, data: rows });
     } catch (error) {
-        console.error("Error fetching partnership enquiries:", error);
-        return res.status(500).json({ message: "Internal server error" });
+        next(error);
     }
 };
 // Admin Action: Delete a partnership enquiry
-export const deletePartnershipEnquiry = async (req, res) => {
+export const deletePartnershipEnquiry = async (req, res, next) => {
     const { id } = req.params;
     try {
         const [result] = await db.execute(
@@ -61,12 +59,11 @@ export const deletePartnershipEnquiry = async (req, res) => {
         );
 
         if (result.affectedRows === 0) {
-            return res.status(404).json({ message: "Enquiry not found" });
+            return res.status(404).json({ success: false, message: "Enquiry not found" });
         }
 
-        res.json({ message: "Partnership enquiry deleted successfully" });
+        res.json({ success: true, message: "Partnership enquiry deleted successfully" });
     } catch (error) {
-        console.error("Error deleting partnership enquiry:", error);
-        return res.status(500).json({ message: "Internal server error" });
+        next(error);
     }
 };

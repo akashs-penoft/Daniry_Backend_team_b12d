@@ -5,20 +5,21 @@ import { db } from "../configs/db.js";
 import { transporter, getPasswordResetTemplate } from "../utils/mailer.js";
 
 // Admin Registration-----
-export const adminRegister = async (req, res) => {
-    const { name, email, password } = req.body;
-
-    if (!name || !email || !password) {
-        return res.status(400).json({ message: "Name, email and password are required" });
-    }
-
+export const adminRegister = async (req, res, next) => {
     try {
+        const { name, email, password } = req.body;
+
+        if (!name || !email || !password) {
+            return res.status(400).json({ success: false, message: "Name, email and password are required" });
+        }
+
         // Check if any admin already exists (Single Use Restriction)
         const [existingAdmins] = await db.query("SELECT id FROM admins LIMIT 1");
 
         if (existingAdmins.length > 0) {
-            return res.status(403).json({ 
-                message: "Registration is locked. An admin account already exists." 
+            return res.status(403).json({
+                success: false,
+                message: "Registration is locked. An admin account already exists."
             });
         }
 
@@ -32,32 +33,31 @@ export const adminRegister = async (req, res) => {
             [name, email, hashedPassword, 1]
         );
 
-        res.status(201).json({ message: "Admin registered successfully" });
+        res.status(201).json({ success: true, message: "Admin registered successfully" });
     } catch (error) {
-        console.error('Registration error:', error);
-        res.status(500).json({ message: "Failed to register admin" });
+        next(error);
     }
 };
 
 // Admin Login------
-export const adminLogin = async (req, res) => {
-    const { email, password } = req.body;
-
+export const adminLogin = async (req, res, next) => {
     try {
+        const { email, password } = req.body;
+
         const [rows] = await db.query(
             "SELECT * FROM admins WHERE email = ?",
             [email]
         );
 
         if (!rows.length) {
-            return res.status(401).json({ message: "Invalid credentials" });
+            return res.status(401).json({ success: false, message: "Invalid credentials" });
         }
 
         const admin = rows[0];
         const isMatch = await bcrypt.compare(password, admin.password_hash);
 
         if (!isMatch) {
-            return res.status(401).json({ message: "Invalid credentials" });
+            return res.status(401).json({ success: false, message: "Invalid credentials" });
         }
 
         const token = jwt.sign(
@@ -73,34 +73,33 @@ export const adminLogin = async (req, res) => {
             maxAge: 24 * 60 * 60 * 1000
         });
 
-        res.json({ message: "Login successful" });
+        res.json({ success: true, message: "Login successful" });
     } catch (error) {
-        console.error('Login error:', error);
-        return res.status(500).json({ message: "Failed to login" });
+        next(error);
     }
 };
 
 // Admin Logout------
 export const adminLogout = (req, res) => {
     res.clearCookie("admin_token");
-    return res.json({ message: "Logged out" });
+    return res.json({ success: true, message: "Logged out" });
 };
 
 // Admin Check Authentication------
 export const checkAdmin = async (req, res) => {
     // If the request reached here, the auth middleware already verified the token
-    return res.json({ authenticated: true, admin: req.admin });
+    return res.json({ success: true, authenticated: true, data: { admin: req.admin } });
 };
 
 // Admin Request Password Reset------
-export const requestPasswordReset = async (req, res) => {
-    const { email } = req.body;
-
-    if (!email) {
-        return res.status(400).json({ message: 'Email is required' });
-    }
-
+export const requestPasswordReset = async (req, res, next) => {
     try {
+        const { email } = req.body;
+
+        if (!email) {
+            return res.status(400).json({ success: false, message: 'Email is required' });
+        }
+
         // Check if admin exists
         const [admins] = await db.execute(
             'SELECT id, email FROM admins WHERE email = ?',
@@ -109,6 +108,7 @@ export const requestPasswordReset = async (req, res) => {
 
         if (admins.length === 0) {
             return res.status(404).json({
+                success: false,
                 message: 'No admin account found with this email address.'
             });
         }
@@ -146,24 +146,24 @@ export const requestPasswordReset = async (req, res) => {
         });
 
         res.json({
+            success: true,
             message: 'A password reset link has been sent to your email address.'
         });
 
     } catch (error) {
-        console.error('Password reset request error:', error);
-        return res.status(500).json({ message: 'Failed to process password reset request' });
+        next(error);
     }
 };
 
 // Verify reset token validity
-export const verifyResetToken = async (req, res) => {
-    const { token } = req.params;
-
-    if (!token) {
-        return res.status(400).json({ message: 'Token is required' });
-    }
-
+export const verifyResetToken = async (req, res, next) => {
     try {
+        const { token } = req.params;
+
+        if (!token) {
+            return res.status(400).json({ success: false, message: 'Token is required' });
+        }
+
         const hashedToken = crypto.createHash('sha256').update(token).digest('hex');
 
         const [tokens] = await db.execute(
@@ -176,32 +176,33 @@ export const verifyResetToken = async (req, res) => {
 
         if (tokens.length === 0) {
             return res.status(400).json({
+                success: false,
                 valid: false,
                 message: 'Invalid or expired reset token'
             });
         }
 
         res.json({
+            success: true,
             valid: true,
-            email: tokens[0].email
+            data: { email: tokens[0].email }
         });
 
     } catch (error) {
-        console.error('Token verification error:', error);
-        return res.status(500).json({ message: 'Failed to verify token' });
+        next(error);
     }
 };
 
 // Admin Update Password (Logged In)
-export const updatePassword = async (req, res) => {
-    const { currentPassword, newPassword } = req.body;
-    const adminId = req.admin.id;
-
-    if (!currentPassword || !newPassword) {
-        return res.status(400).json({ message: "Both current and new passwords are required" });
-    }
-
+export const updatePassword = async (req, res, next) => {
     try {
+        const { currentPassword, newPassword } = req.body;
+        const adminId = req.admin.id;
+
+        if (!currentPassword || !newPassword) {
+            return res.status(400).json({ success: false, message: "Both current and new passwords are required" });
+        }
+
         // Fetch admin with current password hash
         const [rows] = await db.query(
             "SELECT password_hash FROM admins WHERE id = ?",
@@ -209,15 +210,15 @@ export const updatePassword = async (req, res) => {
         );
 
         if (!rows.length) {
-            return res.status(404).json({ message: "Admin not found" });
+            return res.status(404).json({ success: false, message: "Admin not found" });
         }
 
         const admin = rows[0];
-        
+
         // Verify current password
         const isMatch = await bcrypt.compare(currentPassword, admin.password_hash);
         if (!isMatch) {
-            return res.status(401).json({ message: "Incorrect current password" });
+            return res.status(401).json({ success: false, message: "Incorrect current password" });
         }
 
         // Hash new password
@@ -230,22 +231,21 @@ export const updatePassword = async (req, res) => {
             [hashedPassword, adminId]
         );
 
-        res.json({ message: "Password updated successfully" });
+        res.json({ success: true, message: "Password updated successfully" });
     } catch (error) {
-        console.error('Update password error:', error);
-        return res.status(500).json({ message: "Failed to update password" });
+        next(error);
     }
 };
 
 // Admin Reset Password------
-export const resetPassword = async (req, res) => {
-    const { token, password } = req.body;
-
-    if (!token || !password) {
-        return res.status(400).json({ message: 'Token and password are required' });
-    }
-
+export const resetPassword = async (req, res, next) => {
     try {
+        const { token, password } = req.body;
+
+        if (!token || !password) {
+            return res.status(400).json({ success: false, message: 'Token and password are required' });
+        }
+
         const hashedToken = crypto.createHash('sha256').update(token).digest('hex');
 
         // Find valid token
@@ -255,7 +255,7 @@ export const resetPassword = async (req, res) => {
         );
 
         if (tokens.length === 0) {
-            return res.status(400).json({ message: 'Invalid or expired reset token' });
+            return res.status(400).json({ success: false, message: 'Invalid or expired reset token' });
         }
 
         const adminId = tokens[0].admin_id;
@@ -276,29 +276,27 @@ export const resetPassword = async (req, res) => {
             [adminId, hashedToken]
         );
 
-        res.json({ message: 'Password has been reset successfully' });
+        res.json({ success: true, message: 'Password has been reset successfully' });
 
     } catch (error) {
-        console.error('Password reset error:', error);
-        return res.status(500).json({ message: 'Failed to reset password' });
+        next(error);
     }
 };
 
 // Helper to get schema info
-export const getSchema = async (req, res) => {
+export const getSchema = async (req, res, next) => {
     try {
         const [tables] = await db.query("SHOW TABLES");
         const tableNames = tables.map(t => Object.values(t)[0]);
-        
+
         const schema = {};
         for (const table of tableNames) {
             const [columns] = await db.query(`DESCRIBE ${table}`);
             schema[table] = columns;
         }
-        
-        res.json(schema);
+
+        res.json({ success: true, data: schema });
     } catch (error) {
-        console.error('Schema fetch error:', error);
-        res.status(500).json({ message: "Failed to fetch schema" });
+        next(error);
     }
 };

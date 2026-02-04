@@ -3,13 +3,13 @@ import { db } from '../configs/db.js';
 // --- Public Actions ---
 
 // Submit Testimonial (Frontend)
-export const submitTestimonial = async (req, res) => {
+export const submitTestimonial = async (req, res, next) => {
     try {
         const { name, email, content, rating } = req.body;
         const imageUrl = req.file ? `/uploads/testimonials/${req.file.filename}` : null;
 
         if (!name || !content || !rating) {
-            return res.status(400).json({ message: 'Name, content and rating are required' });
+            return res.status(400).json({ success: false, message: 'Name, content and rating are required' });
         }
 
         // Get max display_order and add 1
@@ -22,16 +22,16 @@ export const submitTestimonial = async (req, res) => {
         );
 
         res.status(201).json({
+            success: true,
             message: 'Testimonial submitted successfully. It will be visible after admin approval.'
         });
     } catch (error) {
-        console.error('Error submitting testimonial:', error);
-        res.status(500).json({ message: 'Internal server error' });
+        next(error);
     }
 };
 
 // Get Approved Testimonials (Frontend)
-export const getApprovedTestimonials = async (req, res) => {
+export const getApprovedTestimonials = async (req, res, next) => {
     try {
         const { page = 1, limit = 4 } = req.query;
         const offset = (page - 1) * limit;
@@ -46,6 +46,7 @@ export const getApprovedTestimonials = async (req, res) => {
         const total = totalRows[0].total;
 
         res.json({
+            success: true,
             data: rows,
             pagination: {
                 total,
@@ -55,26 +56,24 @@ export const getApprovedTestimonials = async (req, res) => {
             }
         });
     } catch (error) {
-        console.error('Error fetching testimonials:', error);
-        res.status(500).json({ message: 'Internal server error' });
+        next(error);
     }
 };
 
 // --- Admin Actions ---
 
 // Get All Testimonials (Admin Dashboard)
-export const getAllTestimonials = async (req, res) => {
+export const getAllTestimonials = async (req, res, next) => {
     try {
         const [rows] = await db.execute('SELECT * FROM testimonials ORDER BY created_at DESC');
-        res.json(rows);
+        res.json({ success: true, data: rows });
     } catch (error) {
-        console.error('Error fetching testimonials for admin:', error);
-        res.status(500).json({ message: 'Internal server error' });
+        next(error);
     }
 };
 
 // Toggle Approval Status
-export const toggleApproval = async (req, res) => {
+export const toggleApproval = async (req, res, next) => {
     try {
         const { id } = req.params;
         const { is_approved } = req.body;
@@ -84,20 +83,19 @@ export const toggleApproval = async (req, res) => {
             [is_approved ? 1 : 0, id]
         );
 
-        res.json({ message: `Testimonial ${is_approved ? 'approved' : 'hidden'} successfully` });
+        res.json({ success: true, message: `Testimonial ${is_approved ? 'approved' : 'hidden'} successfully` });
     } catch (error) {
-        console.error('Error toggling approval:', error);
-        res.status(500).json({ message: 'Internal server error' });
+        next(error);
     }
 };
 
 // Update Testimonial Order (Bulk)
-export const updateTestimonialOrder = async (req, res) => {
+export const updateTestimonialOrder = async (req, res, next) => {
     try {
         const { testimonials } = req.body; // Array of { id, display_order }
 
         if (!Array.isArray(testimonials)) {
-            return res.status(400).json({ message: 'Invalid data format' });
+            return res.status(400).json({ success: false, message: 'Invalid data format' });
         }
 
         const connection = await db.getConnection();
@@ -111,7 +109,7 @@ export const updateTestimonialOrder = async (req, res) => {
                 );
             }
             await connection.commit();
-            res.json({ message: 'Order updated successfully' });
+            res.json({ success: true, message: 'Order updated successfully' });
         } catch (err) {
             await connection.rollback();
             throw err;
@@ -119,36 +117,36 @@ export const updateTestimonialOrder = async (req, res) => {
             connection.release();
         }
     } catch (error) {
-        console.error('Error updating order:', error);
-        res.status(500).json({ message: 'Internal server error' });
+        next(error);
     }
 };
 
 // Delete Testimonial
-export const deleteTestimonial = async (req, res) => {
+export const deleteTestimonial = async (req, res, next) => {
     try {
         const { id } = req.params;
         await db.execute('DELETE FROM testimonials WHERE id = ?', [id]);
-        res.json({ message: 'Testimonial deleted successfully' });
+        res.json({ success: true, message: 'Testimonial deleted successfully' });
     } catch (error) {
-        console.error('Error deleting testimonial:', error);
-        res.status(500).json({ message: 'Internal server error' });
+        next(error);
     }
 };
 
 // Get Average Rating (Frontend)
-export const getAverageRating = async (req, res) => {
+export const getAverageRating = async (req, res, next) => {
     try {
         const [rows] = await db.execute(
             'SELECT AVG(rating) as average_rating, COUNT(id) as total_testimonials FROM testimonials WHERE is_approved = 1'
         );
         const { average_rating, total_testimonials } = rows[0];
         res.json({
-            average_rating: average_rating ? parseFloat(average_rating).toFixed(1) : 0,
-            total_testimonials: total_testimonials || 0
+            success: true,
+            data: {
+                average_rating: average_rating ? parseFloat(average_rating).toFixed(1) : 0,
+                total_testimonials: total_testimonials || 0
+            }
         });
     } catch (error) {
-        console.error('Error fetching average rating:', error);
-        res.status(500).json({ message: 'Internal server error' });
+        next(error);
     }
 };

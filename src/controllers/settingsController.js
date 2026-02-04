@@ -6,7 +6,7 @@ import { fileURLToPath } from 'url';
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
-export const getCompanyLogo = async (req, res) => {
+export const getCompanyLogo = async (req, res, next) => {
   try {
     const [rows] = await db.query(
       "SELECT value FROM settings WHERE setting_key = 'company_logo'"
@@ -14,20 +14,19 @@ export const getCompanyLogo = async (req, res) => {
 
     if (rows.length === 0) {
       // Return a default logo if none is set in DB
-      return res.json({ logoPath: "/KIF-HEADER-LOGO.png" }); 
+      return res.json({ success: true, data: { logoPath: "/KIF-HEADER-LOGO.png" } });
     }
 
-    res.json({ logoPath: rows[0].value });
+    res.json({ success: true, data: { logoPath: rows[0].value } });
   } catch (error) {
-    console.error("Error fetching logo:", error);
-    res.status(500).json({ message: "Failed to fetch logo" });
+    next(error);
   }
 };
 
-export const updateCompanyLogo = async (req, res) => {
+export const updateCompanyLogo = async (req, res, next) => {
   try {
     if (!req.file) {
-      return res.status(400).json({ message: "No logo file uploaded" });
+      return res.status(400).json({ success: false, message: "No logo file uploaded" });
     }
 
     const newLogoPath = `/uploads/settings/${req.file.filename}`;
@@ -40,14 +39,13 @@ export const updateCompanyLogo = async (req, res) => {
     if (oldRows.length > 0) {
       const oldLogoPath = oldRows[0].value;
       // Convert URL path to absolute filesystem path
-      // oldLogoPath is something like "/uploads/settings/logo-123.png"
       const oldFilePath = path.join(__dirname, '../../', oldLogoPath);
-      
+
       if (fs.existsSync(oldFilePath)) {
         try {
           fs.unlinkSync(oldFilePath);
-          console.log(`Deleted old logo: ${oldFilePath}`);
         } catch (err) {
+          // Non-critical error, just log it internally
           console.error(`Error deleting old logo file: ${err.message}`);
         }
       }
@@ -59,9 +57,8 @@ export const updateCompanyLogo = async (req, res) => {
       [newLogoPath, newLogoPath]
     );
 
-    res.json({ message: "Logo updated successfully", logoPath: newLogoPath });
+    res.json({ success: true, message: "Logo updated successfully", data: { logoPath: newLogoPath } });
   } catch (error) {
-    console.error("Error updating logo:", error);
-    res.status(500).json({ message: "Failed to update logo" });
+    next(error);
   }
 };

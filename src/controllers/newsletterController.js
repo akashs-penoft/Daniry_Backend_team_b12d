@@ -1,17 +1,17 @@
 import { db } from "../configs/db.js";
 import { transporter, getNewsletterConfirmationTemplate, getNewsBlastTemplate } from "../utils/mailer.js";
 
-export const subscribeNewsletter = async (req, res) => {
+export const subscribeNewsletter = async (req, res, next) => {
   const { email } = req.body;
 
   if (!email) {
-    return res.status(400).json({ message: "Email is required" });
+    return res.status(400).json({ success: false, message: "Email is required" });
   }
 
   // Basic email validation
   const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
   if (!emailRegex.test(email)) {
-    return res.status(400).json({ message: "Invalid email format" });
+    return res.status(400).json({ success: false, message: "Invalid email format" });
   }
 
   try {
@@ -22,7 +22,7 @@ export const subscribeNewsletter = async (req, res) => {
     );
 
     if (existing.length > 0) {
-      return res.status(409).json({ message: "Email already subscribed" });
+      return res.status(409).json({ success: false, message: "Email already subscribed" });
     }
 
     // Insert into database
@@ -39,33 +39,31 @@ export const subscribeNewsletter = async (req, res) => {
       html: getNewsletterConfirmationTemplate()
     });
 
-    res.json({ message: "Successfully subscribed to newsletter" });
+    res.json({ success: true, message: "Successfully subscribed to newsletter" });
 
   } catch (error) {
-    console.error("Newsletter error:", error);
-    res.status(500).json({ message: "Failed to subscribe" });
+    next(error);
   }
 };
 
 // Admin Action: Get all subscribers
-export const getAllSubscribers = async (req, res) => {
+export const getAllSubscribers = async (req, res, next) => {
   try {
     const [rows] = await db.execute(
       "SELECT id, email, subscribed_at FROM newsletter_subscribers ORDER BY subscribed_at DESC"
     );
-    res.json(rows);
+    res.json({ success: true, data: rows });
   } catch (error) {
-    console.error("Error fetching subscribers:", error);
-    res.status(500).json({ message: "Internal server error" });
+    next(error);
   }
 };
 
 // Admin Action: Send News Blast to all subscribers
-export const sendNewsToAllSubscribers = async (req, res) => {
+export const sendNewsToAllSubscribers = async (req, res, next) => {
   const { heading, content } = req.body;
 
   if (!heading || !content) {
-    return res.status(400).json({ message: "Heading and Content are required" });
+    return res.status(400).json({ success: false, message: "Heading and Content are required" });
   }
 
   try {
@@ -75,14 +73,14 @@ export const sendNewsToAllSubscribers = async (req, res) => {
     );
 
     if (subscribers.length === 0) {
-      return res.status(404).json({ message: "No active subscribers found" });
+      return res.status(404).json({ success: false, message: "No active subscribers found" });
     }
 
     // 2. Prepare the professional email template
     const emailHtml = getNewsBlastTemplate(heading, content);
 
     // 3. Send emails in parallel (using Promise.all for speed)
-    const emailPromises = subscribers.map(sub => 
+    const emailPromises = subscribers.map(sub =>
       transporter.sendMail({
         from: `"Daniry Updates" <${process.env.SMTP_EMAIL}>`,
         to: sub.email,
@@ -99,12 +97,12 @@ export const sendNewsToAllSubscribers = async (req, res) => {
       [heading, content]
     );
 
-    res.json({ 
-      message: `News blast sent successfully to ${subscribers.length} subscribers` 
+    res.json({
+      success: true,
+      message: `News blast sent successfully to ${subscribers.length} subscribers`
     });
 
   } catch (error) {
-    console.error("Error sending news blast:", error);
-    res.status(500).json({ message: "Failed to send news blast" });
+    next(error);
   }
 };

@@ -3,7 +3,7 @@ import { db } from '../configs/db.js';
 // --- Admin Actions ---
 
 // Get All Products (Admin)
-export const getAllProducts = async (req, res) => {
+export const getAllProducts = async (req, res, next) => {
     try {
         const [rows] = await db.execute(`
             SELECT p.*, c.name as category_name 
@@ -11,15 +11,14 @@ export const getAllProducts = async (req, res) => {
             JOIN product_categories c ON p.category_id = c.id 
             ORDER BY p.created_at DESC
         `);
-        res.json(rows);
+        res.json({ success: true, data: rows });
     } catch (error) {
-        console.error('Error fetching products:', error);
-        return res.status(500).json({ message: 'Internal server error' });
+        next(error);
     }
 };
 
 // Create Product
-export const createProduct = async (req, res) => {
+export const createProduct = async (req, res, next) => {
     try {
         const {
             category_id, name, slug, short_description,
@@ -28,7 +27,7 @@ export const createProduct = async (req, res) => {
         const image_url = req.file ? `/uploads/products/${req.file.filename}` : null;
 
         if (!category_id || !name || !slug) {
-            return res.status(400).json({ message: 'Category, name, and slug are required' });
+            return res.status(400).json({ success: false, message: 'Category, name, and slug are required' });
         }
 
         const [result] = await db.execute(
@@ -42,18 +41,17 @@ export const createProduct = async (req, res) => {
             ]
         );
 
-        res.status(201).json({ message: 'Product created successfully', id: result.insertId });
+        res.status(201).json({ success: true, message: 'Product created successfully', data: { id: result.insertId } });
     } catch (error) {
-        console.error('Error creating product:', error);
         if (error.code === 'ER_DUP_ENTRY') {
-            return res.status(400).json({ message: 'Slug must be unique' });
+            return res.status(400).json({ success: false, message: 'Slug must be unique' });
         }
-        return res.status(500).json({ message: 'Internal server error' });
+        next(error);
     }
 };
 
 // Update Product
-export const updateProduct = async (req, res) => {
+export const updateProduct = async (req, res, next) => {
     try {
         const { id } = req.params;
         const {
@@ -63,7 +61,7 @@ export const updateProduct = async (req, res) => {
 
         const [existing] = await db.execute('SELECT * FROM products WHERE id = ?', [id]);
         if (existing.length === 0) {
-            return res.status(404).json({ message: 'Product not found' });
+            return res.status(404).json({ success: false, message: 'Product not found' });
         }
 
         const product = existing[0];
@@ -89,18 +87,17 @@ export const updateProduct = async (req, res) => {
             ]
         );
 
-        res.json({ message: 'Product updated successfully' });
+        res.json({ success: true, message: 'Product updated successfully' });
     } catch (error) {
-        console.error('Error updating product:', error);
         if (error.code === 'ER_DUP_ENTRY') {
-            return res.status(400).json({ message: 'Slug must be unique' });
+            return res.status(400).json({ success: false, message: 'Slug must be unique' });
         }
-        return res.status(500).json({ message: 'Internal server error' });
+        next(error);
     }
 };
 
 // Delete Product
-export const deleteProduct = async (req, res) => {
+export const deleteProduct = async (req, res, next) => {
     const connection = await db.getConnection();
     try {
         const { id } = req.params;
@@ -111,7 +108,7 @@ export const deleteProduct = async (req, res) => {
         const [existing] = await connection.execute('SELECT * FROM products WHERE id = ?', [id]);
         if (existing.length === 0) {
             await connection.rollback();
-            return res.status(404).json({ message: 'Product not found' });
+            return res.status(404).json({ success: false, message: 'Product not found' });
         }
 
         // Delete related records first (to handle foreign key constraints)
@@ -124,11 +121,10 @@ export const deleteProduct = async (req, res) => {
         await connection.execute('DELETE FROM products WHERE id = ?', [id]);
 
         await connection.commit();
-        res.json({ message: 'Product deleted successfully' });
+        res.json({ success: true, message: 'Product deleted successfully' });
     } catch (error) {
         await connection.rollback();
-        console.error('Error deleting product:', error);
-        return res.status(500).json({ message: 'Internal server error' });
+        next(error);
     } finally {
         connection.release();
     }
@@ -137,7 +133,7 @@ export const deleteProduct = async (req, res) => {
 // --- Product Components Actions (Options, Highlights, Nutrients) ---
 
 // Get Product Components (Admin)
-export const getProductComponents = async (req, res) => {
+export const getProductComponents = async (req, res, next) => {
     try {
         const { id } = req.params;
 
@@ -145,15 +141,14 @@ export const getProductComponents = async (req, res) => {
         const [highlights] = await db.execute('SELECT * FROM product_highlights WHERE product_id = ? ORDER BY sort_order ASC', [id]);
         const [nutrients] = await db.execute('SELECT *, nutrient_name as nutrient FROM product_nutrients WHERE product_id = ? ORDER BY sort_order ASC', [id]);
 
-        res.json({ options, highlights, nutrients });
+        res.json({ success: true, data: { options, highlights, nutrients } });
     } catch (error) {
-        console.error('Error fetching product components:', error);
-        return res.status(500).json({ message: 'Internal server error' });
+        next(error);
     }
 };
 
 // Manage Product Options (Bulk update/replace)
-export const manageProductOptions = async (req, res) => {
+export const manageProductOptions = async (req, res, next) => {
     const connection = await db.getConnection();
     try {
         const { id } = req.params; // product_id
@@ -178,18 +173,17 @@ export const manageProductOptions = async (req, res) => {
         }
 
         await connection.commit();
-        res.json({ message: 'Product options updated successfully' });
+        res.json({ success: true, message: 'Product options updated successfully' });
     } catch (error) {
         await connection.rollback();
-        console.error('Error managing product options:', error);
-        return res.status(500).json({ message: 'Internal server error' });
+        next(error);
     } finally {
         connection.release();
     }
 };
 
 // Manage Product Highlights
-export const manageProductHighlights = async (req, res) => {
+export const manageProductHighlights = async (req, res, next) => {
     const connection = await db.getConnection();
     try {
         const { id } = req.params;
@@ -205,18 +199,17 @@ export const manageProductHighlights = async (req, res) => {
         }
 
         await connection.commit();
-        res.json({ message: 'Product highlights updated successfully' });
+        res.json({ success: true, message: 'Product highlights updated successfully' });
     } catch (error) {
         await connection.rollback();
-        console.error('Error managing product highlights:', error);
-        return res.status(500).json({ message: 'Internal server error' });
+        next(error);
     } finally {
         connection.release();
     }
 };
 
 // Manage Product Nutrients
-export const manageProductNutrients = async (req, res) => {
+export const manageProductNutrients = async (req, res, next) => {
     const connection = await db.getConnection();
     try {
         const { id } = req.params;
@@ -237,11 +230,10 @@ export const manageProductNutrients = async (req, res) => {
         }
 
         await connection.commit();
-        res.json({ message: 'Product nutrients updated successfully' });
+        res.json({ success: true, message: 'Product nutrients updated successfully' });
     } catch (error) {
         await connection.rollback();
-        console.error('Error managing product nutrients:', error);
-        return res.status(500).json({ message: 'Internal server error' });
+        next(error);
     } finally {
         connection.release();
     }
@@ -250,14 +242,14 @@ export const manageProductNutrients = async (req, res) => {
 // --- Review Actions ---
 
 // Add Review (Public)
-export const addReview = async (req, res) => {
+export const addReview = async (req, res, next) => {
     const connection = await db.getConnection();
     try {
         const { id } = req.params; // product_id
         const { reviewer_name, rating, review } = req.body;
 
         if (!rating || rating < 1 || rating > 5) {
-            return res.status(400).json({ message: 'Valid rating (1-5) is required' });
+            return res.status(400).json({ success: false, message: 'Valid rating (1-5) is required' });
         }
 
         await connection.beginTransaction();
@@ -280,18 +272,17 @@ export const addReview = async (req, res) => {
         );
 
         await connection.commit();
-        res.status(201).json({ message: 'Review added successfully' });
+        res.status(201).json({ success: true, message: 'Review added successfully' });
     } catch (error) {
         await connection.rollback();
-        console.error('Error adding product review:', error);
-        return res.status(500).json({ message: 'Internal server error' });
+        next(error);
     } finally {
         connection.release();
     }
 };
 
 // Get All Product Reviews (Public)
-export const getAllProductReviews = async (req, res) => {
+export const getAllProductReviews = async (req, res, next) => {
     try {
         const { page = 1, limit = 4 } = req.query;
         const offset = (page - 1) * limit;
@@ -310,6 +301,7 @@ export const getAllProductReviews = async (req, res) => {
         const total = totalRows[0].total;
 
         res.json({
+            success: true,
             data: reviews,
             pagination: {
                 total,
@@ -319,15 +311,14 @@ export const getAllProductReviews = async (req, res) => {
             }
         });
     } catch (error) {
-        console.error('Error fetching all product reviews:', error);
-        return res.status(500).json({ message: 'Internal server error' });
+        next(error);
     }
 };
 
 // --- Public Actions ---
 
 // Get Product Listing (Frontend)
-export const getProductListing = async (req, res) => {
+export const getProductListing = async (req, res, next) => {
     try {
         const { limit = 100 } = req.query; // Default to 100 products per category for now
 
@@ -362,15 +353,14 @@ export const getProductListing = async (req, res) => {
             };
         }));
 
-        res.json(listing);
+        res.json({ success: true, data: listing });
     } catch (error) {
-        console.error('Error fetching product listing:', error);
-        return res.status(500).json({ message: 'Internal server error' });
+        next(error);
     }
 };
 
 // Get Products by Category Slug (Frontend - for Category Page with Pagination)
-export const getCategoryProducts = async (req, res) => {
+export const getCategoryProducts = async (req, res, next) => {
     try {
         const { slug } = req.params;
         const { page = 1, limit = 9 } = req.query;
@@ -379,7 +369,7 @@ export const getCategoryProducts = async (req, res) => {
         // Fetch category details
         const [categoryRows] = await db.execute('SELECT * FROM product_categories WHERE slug = ? AND is_active = 1', [slug]);
         if (categoryRows.length === 0) {
-            return res.status(404).json({ message: 'Category not found' });
+            return res.status(404).json({ success: false, message: 'Category not found' });
         }
         const category = categoryRows[0];
 
@@ -406,30 +396,32 @@ export const getCategoryProducts = async (req, res) => {
         const total = countResult[0].total;
 
         res.json({
-            category,
-            data: products,
-            pagination: {
-                total,
-                page: Number(page),
-                limit: Number(limit),
-                hasMore: offset + products.length < total
+            success: true,
+            data: {
+                category,
+                products,
+                pagination: {
+                    total,
+                    page: Number(page),
+                    limit: Number(limit),
+                    hasMore: offset + products.length < total
+                }
             }
         });
     } catch (error) {
-        console.error('Error fetching category products:', error);
-        return res.status(500).json({ message: 'Internal server error' });
+        next(error);
     }
 };
 
 // Get Product Details (Frontend)
-export const getProductDetails = async (req, res) => {
+export const getProductDetails = async (req, res, next) => {
     try {
         const { slug } = req.params;
 
         // Fetch product
         const [products] = await db.execute('SELECT * FROM products WHERE slug = ? AND is_active = 1', [slug]);
         if (products.length === 0) {
-            return res.status(404).json({ message: 'Product not found' });
+            return res.status(404).json({ success: false, message: 'Product not found' });
         }
 
         const product = products[0];
@@ -450,21 +442,23 @@ export const getProductDetails = async (req, res) => {
         `, [productId]);
 
         res.json({
-            ...product,
-            options,
-            highlights,
-            nutrients,
-            reviews,
-            ecommerce_links
+            success: true,
+            data: {
+                ...product,
+                options,
+                highlights,
+                nutrients,
+                reviews,
+                ecommerce_links
+            }
         });
     } catch (error) {
-        console.error('Error fetching product details:', error);
-        return res.status(500).json({ message: 'Internal server error' });
+        next(error);
     }
 };
 
 // Get Products by Category (Frontend - for stage navigation)
-export const getProductsByCategory = async (req, res) => {
+export const getProductsByCategory = async (req, res, next) => {
     try {
         const { categoryId } = req.params;
 
@@ -477,15 +471,14 @@ export const getProductsByCategory = async (req, res) => {
             ORDER BY p.id ASC
         `, [categoryId]);
 
-        res.json(products);
+        res.json({ success: true, data: products });
     } catch (error) {
-        console.error('Error fetching products by category:', error);
-        return res.status(500).json({ message: 'Internal server error' });
+        next(error);
     }
 };
 
 // Manage Product Ecommerce Links
-export const manageProductEcommerceLinks = async (req, res) => {
+export const manageProductEcommerceLinks = async (req, res, next) => {
     const connection = await db.getConnection();
     try {
         const { id } = req.params;
@@ -520,11 +513,10 @@ export const manageProductEcommerceLinks = async (req, res) => {
         }
 
         await connection.commit();
-        res.json({ message: 'Product ecommerce links updated successfully' });
+        res.json({ success: true, message: 'Product ecommerce links updated successfully' });
     } catch (error) {
         await connection.rollback();
-        console.error('Error managing product ecommerce links:', error);
-        return res.status(500).json({ message: 'Internal server error' });
+        next(error);
     } finally {
         connection.release();
     }
