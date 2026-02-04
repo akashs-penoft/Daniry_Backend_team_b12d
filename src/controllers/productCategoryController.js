@@ -5,7 +5,7 @@ import { db } from '../configs/db.js';
 // Get All Categories
 export const getAllCategories = async (req, res) => {
     try {
-        const [rows] = await db.execute('SELECT * FROM product_categories ORDER BY id ASC');
+        const [rows] = await db.execute('SELECT * FROM product_categories ORDER BY sort_order ASC, id ASC');
         res.json(rows);
     } catch (error) {
         console.error('Error fetching product categories:', error);
@@ -84,7 +84,7 @@ export const updateCategory = async (req, res) => {
 export const deleteCategory = async (req, res) => {
     try {
         const { id } = req.params;
-        
+
         // Check if category has products
         const [products] = await db.execute('SELECT id FROM products WHERE category_id = ? LIMIT 1', [id]);
         if (products.length > 0) {
@@ -100,5 +100,35 @@ export const deleteCategory = async (req, res) => {
     } catch (error) {
         console.error('Error deleting product category:', error);
         return res.status(500).json({ message: 'Internal server error' });
+    }
+};
+
+// Reorder Categories
+export const reorderCategories = async (req, res) => {
+    const connection = await db.getConnection();
+    try {
+        const { categories } = req.body; // Array of { id, sort_order }
+
+        if (!categories || !Array.isArray(categories)) {
+            return res.status(400).json({ message: 'Invalid categories array' });
+        }
+
+        await connection.beginTransaction();
+
+        for (const cat of categories) {
+            await connection.execute(
+                'UPDATE product_categories SET sort_order = ? WHERE id = ?',
+                [cat.sort_order, cat.id]
+            );
+        }
+
+        await connection.commit();
+        res.json({ message: 'Categories reordered successfully' });
+    } catch (error) {
+        await connection.rollback();
+        console.error('Error reordering categories:', error);
+        return res.status(500).json({ message: 'Internal server error' });
+    } finally {
+        connection.release();
     }
 };

@@ -3,6 +3,7 @@ import {
     getAllCategories,
     getCategoryBySlug,
     createCategory,
+    reorderCategories,
     updateCategory,
     deleteCategory
 } from '../controllers/productCategoryController.js';
@@ -41,6 +42,7 @@ router.get('/categories/:slug', getCategoryBySlug);
 // --- Admin Product Category Routes ---
 router.get('/admin/categories', adminAuth, getAllCategories);
 router.post('/admin/categories', adminAuth, createCategory);
+router.put('/admin/categories/reorder', adminAuth, reorderCategories);
 router.put('/admin/categories/:id', adminAuth, updateCategory);
 router.delete('/admin/categories/:id', adminAuth, deleteCategory);
 

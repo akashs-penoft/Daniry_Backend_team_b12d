@@ -332,7 +332,7 @@ export const getProductListing = async (req, res) => {
         const { limit = 100 } = req.query; // Default to 100 products per category for now
 
         // Fetch categories with their active products
-        const [categories] = await db.execute('SELECT * FROM product_categories WHERE is_active = 1');
+        const [categories] = await db.execute('SELECT * FROM product_categories WHERE is_active = 1 ORDER BY sort_order ASC, id ASC');
 
         const listing = await Promise.all(categories.map(async (cat) => {
             // Get total product count for this category
