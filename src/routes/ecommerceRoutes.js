@@ -10,7 +10,7 @@ import { uploadProductImage } from '../middlewares/uploadMiddleware.js'; // Reus
 
 const router = express.Router();
 
-router.get('/', adminAuth, getEcommercePlatforms);
+router.get('/', getEcommercePlatforms);
 router.post('/', adminAuth, uploadProductImage.single('logo'), createEcommercePlatform);
 router.put('/:id', adminAuth, uploadProductImage.single('logo'), updateEcommercePlatform);
 router.delete('/:id', adminAuth, deleteEcommercePlatform);
