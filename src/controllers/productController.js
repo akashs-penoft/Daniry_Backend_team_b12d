@@ -401,7 +401,7 @@ export const getCategoryProducts = async (req, res, next) => {
             success: true,
             data: {
                 category,
-                products,
+                data: products,
                 pagination: {
                     total,
                     page: Number(page),
