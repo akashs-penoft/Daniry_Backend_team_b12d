@@ -11,6 +11,7 @@ import settingsRoutes from './src/routes/settingsRoutes.js';
 import newsletterRoutes from './src/routes/newsletterRoutes.js';
 import partnershipRoutes from './src/routes/partnershipRoutes.js';
 import productRoutes from './src/routes/productRoutes.js';
+import ecommerceRoutes from './src/routes/ecommerceRoutes.js';
 import path from 'path';
 import { fileURLToPath } from 'url';
 
@@ -70,7 +71,11 @@ app.use('/api/newsletter', newsletterRoutes);
 app.use('/api/partnership', partnershipRoutes);
 
 // Product routes
+// Product routes
 app.use('/api/products', productRoutes);
+
+// Ecommerce Platform routes
+app.use('/api/ecommerce-platforms', ecommerceRoutes);
 
 // Static files for uploads
 app.use('/uploads', express.static(path.join(__dirname, 'uploads')));

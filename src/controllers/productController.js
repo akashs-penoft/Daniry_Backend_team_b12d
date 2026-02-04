@@ -441,12 +441,21 @@ export const getProductDetails = async (req, res) => {
         const [nutrients] = await db.execute('SELECT *, nutrient_name as nutrient FROM product_nutrients WHERE product_id = ? ORDER BY sort_order ASC', [productId]);
         const [reviews] = await db.execute('SELECT * FROM product_reviews WHERE product_id = ? AND is_approved = 1 ORDER BY created_at DESC', [productId]);
 
+        // Fetch ecommerce links with platform details
+        const [ecommerce_links] = await db.execute(`
+            SELECT pel.url, ep.name, ep.logo_url
+            FROM product_ecommerce_links pel
+            JOIN ecommerce_platforms ep ON pel.platform_id = ep.id
+            WHERE pel.product_id = ? AND ep.is_active = 1
+        `, [productId]);
+
         res.json({
             ...product,
             options,
             highlights,
             nutrients,
-            reviews
+            reviews,
+            ecommerce_links
         });
     } catch (error) {
         console.error('Error fetching product details:', error);
@@ -472,5 +481,51 @@ export const getProductsByCategory = async (req, res) => {
     } catch (error) {
         console.error('Error fetching products by category:', error);
         return res.status(500).json({ message: 'Internal server error' });
+    }
+};
+
+// Manage Product Ecommerce Links
+export const manageProductEcommerceLinks = async (req, res) => {
+    const connection = await db.getConnection();
+    try {
+        const { id } = req.params;
+        const { links, coming_soon_status } = req.body; // links: { platformId: url }, coming_soon_status: 1/0
+
+        await connection.beginTransaction();
+
+        // Update active/coming soon status in products table
+        if (coming_soon_status !== undefined) {
+            await connection.execute(
+                'UPDATE products SET coming_soon_status = ? WHERE id = ?',
+                [coming_soon_status ? 1 : 0, id]
+            );
+        }
+
+        // Manage links
+        if (links) {
+            // Delete existing links for this product
+            await connection.execute('DELETE FROM product_ecommerce_links WHERE product_id = ?', [id]);
+
+            const linkEntries = Object.entries(links).map(([platformId, url]) => {
+                if (url && url.trim() !== "") {
+                    return [id, platformId, url];
+                }
+                return null;
+            }).filter(entry => entry !== null);
+
+            if (linkEntries.length > 0) {
+                const insertQuery = `INSERT INTO product_ecommerce_links (product_id, platform_id, url) VALUES ?`;
+                await connection.query(insertQuery, [linkEntries]);
+            }
+        }
+
+        await connection.commit();
+        res.json({ message: 'Product ecommerce links updated successfully' });
+    } catch (error) {
+        await connection.rollback();
+        console.error('Error managing product ecommerce links:', error);
+        return res.status(500).json({ message: 'Internal server error' });
+    } finally {
+        connection.release();
     }
 };

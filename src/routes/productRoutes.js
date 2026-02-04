@@ -20,7 +20,8 @@ import {
     getProductListing,
     getProductDetails,
     getProductsByCategory,
-    getCategoryProducts
+    getCategoryProducts,
+    manageProductEcommerceLinks
 } from '../controllers/productController.js';
 import { adminAuth } from '../middlewares/authMiddleware.js';
 import { uploadProductImage } from '../middlewares/uploadMiddleware.js';
@@ -54,5 +55,6 @@ router.get('/admin/components/:id', adminAuth, getProductComponents);
 router.post('/admin/options/:id', adminAuth, uploadProductImage.single('image'), manageProductOptions);
 router.post('/admin/highlights/:id', adminAuth, manageProductHighlights);
 router.post('/admin/nutrients/:id', adminAuth, manageProductNutrients);
+router.post('/admin/ecommerce-links/:id', adminAuth, manageProductEcommerceLinks);
 
 export default router;
