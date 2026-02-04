@@ -135,3 +135,20 @@ export const deleteTestimonial = async (req, res) => {
         res.status(500).json({ message: 'Internal server error' });
     }
 };
+
+// Get Average Rating (Frontend)
+export const getAverageRating = async (req, res) => {
+    try {
+        const [rows] = await db.execute(
+            'SELECT AVG(rating) as average_rating, COUNT(id) as total_testimonials FROM testimonials WHERE is_approved = 1'
+        );
+        const { average_rating, total_testimonials } = rows[0];
+        res.json({
+            average_rating: average_rating ? parseFloat(average_rating).toFixed(1) : 0,
+            total_testimonials: total_testimonials || 0
+        });
+    } catch (error) {
+        console.error('Error fetching average rating:', error);
+        res.status(500).json({ message: 'Internal server error' });
+    }
+};

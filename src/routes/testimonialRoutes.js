@@ -5,7 +5,8 @@ import {
     getAllTestimonials, 
     toggleApproval, 
     updateTestimonialOrder, 
-    deleteTestimonial 
+    deleteTestimonial,
+    getAverageRating
 } from '../controllers/testimonialController.js';
 import { uploadTestimonialImage } from '../middlewares/uploadMiddleware.js';
 import { adminAuth } from '../middlewares/authMiddleware.js';
@@ -15,6 +16,7 @@ const router = express.Router();
 // Public routes
 router.post('/submit', uploadTestimonialImage.single('image'), submitTestimonial);
 router.get('/public', getApprovedTestimonials);
+router.get('/average-rating', getAverageRating);
 
 // Admin routes (Protected)
 router.get('/admin/all', adminAuth, getAllTestimonials);
