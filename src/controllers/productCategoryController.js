@@ -32,15 +32,15 @@ export const getCategoryBySlug = async (req, res) => {
 // Create Category
 export const createCategory = async (req, res) => {
     try {
-        const { name, slug, description, is_active } = req.body;
+        const { name, slug, description, is_active, display_mode } = req.body;
 
         if (!name || !slug) {
             return res.status(400).json({ message: 'Name and slug are required' });
         }
 
         const [result] = await db.execute(
-            'INSERT INTO product_categories (name, slug, description, is_active) VALUES (?, ?, ?, ?)',
-            [name, slug, description || null, is_active ?? 1]
+            'INSERT INTO product_categories (name, slug, description, is_active, display_mode) VALUES (?, ?, ?, ?, ?)',
+            [name, slug, description || null, is_active ?? 1, display_mode || 'normal']
         );
 
         res.status(201).json({ message: 'Category created successfully', id: result.insertId });
@@ -57,7 +57,7 @@ export const createCategory = async (req, res) => {
 export const updateCategory = async (req, res) => {
     try {
         const { id } = req.params;
-        const { name, slug, description, is_active } = req.body;
+        const { name, slug, description, is_active, display_mode } = req.body;
 
         const [existing] = await db.execute('SELECT id FROM product_categories WHERE id = ?', [id]);
         if (existing.length === 0) {
@@ -65,8 +65,8 @@ export const updateCategory = async (req, res) => {
         }
 
         await db.execute(
-            'UPDATE product_categories SET name = ?, slug = ?, description = ?, is_active = ? WHERE id = ?',
-            [name, slug, description, is_active ?? 1, id]
+            'UPDATE product_categories SET name = ?, slug = ?, description = ?, is_active = ?, display_mode = ? WHERE id = ?',
+            [name, slug, description, is_active ?? 1, display_mode || 'normal', id]
         );
 
         res.json({ message: 'Category updated successfully' });
