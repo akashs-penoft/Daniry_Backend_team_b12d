@@ -1,6 +1,7 @@
 import express from "express";
 import { submitPartnershipForm, getAllPartnershipEnquiries, deletePartnershipEnquiry } from "../controllers/partnershipController.js";
 import { adminAuth } from "../middlewares/authMiddleware.js";
+import { authorize } from "../middlewares/rbacMiddleware.js";
 
 const router = express.Router();
 
@@ -16,9 +17,9 @@ const partnershipLimiter = rateLimit({
 router.post("/", partnershipLimiter, submitPartnershipForm);
 
 // Admin: Get all partnership enquiries
-router.get("/admin/all", adminAuth, getAllPartnershipEnquiries);
+router.get("/admin/all", adminAuth, authorize('partners.view'), getAllPartnershipEnquiries);
 
 // Admin: Delete partnership enquiry
-router.delete("/admin/:id", adminAuth, deletePartnershipEnquiry);
+router.delete("/admin/:id", adminAuth, authorize('partners.delete'), deletePartnershipEnquiry);
 
 export default router;

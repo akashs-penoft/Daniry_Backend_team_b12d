@@ -25,6 +25,7 @@ import {
     manageProductEcommerceLinks
 } from '../controllers/productController.js';
 import { adminAuth } from '../middlewares/authMiddleware.js';
+import { authorize } from '../middlewares/rbacMiddleware.js';
 import { uploadProductImage } from '../middlewares/uploadMiddleware.js';
 
 const router = express.Router();
@@ -40,23 +41,23 @@ router.get('/categories', getAllCategories);
 router.get('/categories/:slug', getCategoryBySlug);
 
 // --- Admin Product Category Routes ---
-router.get('/admin/categories', adminAuth, getAllCategories);
-router.post('/admin/categories', adminAuth, createCategory);
-router.put('/admin/categories/reorder', adminAuth, reorderCategories);
-router.put('/admin/categories/:id', adminAuth, updateCategory);
-router.delete('/admin/categories/:id', adminAuth, deleteCategory);
+router.get('/admin/categories', adminAuth, authorize('products.view'), getAllCategories);
+router.post('/admin/categories', adminAuth, authorize('products.create'), createCategory);
+router.put('/admin/categories/reorder', adminAuth, authorize('products.edit'), reorderCategories);
+router.put('/admin/categories/:id', adminAuth, authorize('products.edit'), updateCategory);
+router.delete('/admin/categories/:id', adminAuth, authorize('products.delete'), deleteCategory);
 
 // --- Admin Product Routes ---
-router.get('/admin/all', adminAuth, getAllProducts);
-router.post('/admin/create', adminAuth, uploadProductImage.single('image'), createProduct);
-router.put('/admin/update/:id', adminAuth, uploadProductImage.single('image'), updateProduct);
-router.delete('/admin/delete/:id', adminAuth, deleteProduct);
+router.get('/admin/all', adminAuth, authorize('products.view'), getAllProducts);
+router.post('/admin/create', adminAuth, authorize('products.create'), uploadProductImage.single('image'), createProduct);
+router.put('/admin/update/:id', adminAuth, authorize('products.edit'), uploadProductImage.single('image'), updateProduct);
+router.delete('/admin/delete/:id', adminAuth, authorize('products.delete'), deleteProduct);
 
 // --- Admin Product Component Management ---
-router.get('/admin/components/:id', adminAuth, getProductComponents);
-router.post('/admin/options/:id', adminAuth, uploadProductImage.single('image'), manageProductOptions);
-router.post('/admin/highlights/:id', adminAuth, manageProductHighlights);
-router.post('/admin/nutrients/:id', adminAuth, manageProductNutrients);
-router.post('/admin/ecommerce-links/:id', adminAuth, manageProductEcommerceLinks);
+router.get('/admin/components/:id', adminAuth, authorize('products.view'), getProductComponents);
+router.post('/admin/options/:id', adminAuth, authorize('products.edit'), uploadProductImage.single('image'), manageProductOptions);
+router.post('/admin/highlights/:id', adminAuth, authorize('products.edit'), manageProductHighlights);
+router.post('/admin/nutrients/:id', adminAuth, authorize('products.edit'), manageProductNutrients);
+router.post('/admin/ecommerce-links/:id', adminAuth, authorize('products.edit'), manageProductEcommerceLinks);
 
 export default router;
