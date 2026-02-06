@@ -44,36 +44,87 @@ export const adminLogin = async (req, res, next) => {
     try {
         const { email, password } = req.body;
 
-        const [rows] = await db.query(
-            "SELECT * FROM admins WHERE email = ?",
+        // 1. Check Super Admin (admins table)
+        const [adminRows] = await db.query(
+            "SELECT * FROM admins WHERE email = ? AND is_active = 1",
             [email]
         );
 
-        if (!rows.length) {
-            return res.status(401).json({ success: false, message: "Invalid credentials" });
+        if (adminRows.length > 0) {
+            const admin = adminRows[0];
+            const isMatch = await bcrypt.compare(password, admin.password_hash);
+
+            if (isMatch) {
+                const token = jwt.sign(
+                    { id: admin.id, email: admin.email, name: admin.name, isSuperAdmin: true },
+                    process.env.JWT_SECRET,
+                    { expiresIn: "1d" }
+                );
+
+                res.cookie("admin_token", token, {
+                    httpOnly: true,
+                    secure: process.env.NODE_ENV === 'production',
+                    sameSite: "lax",
+                    maxAge: 24 * 60 * 60 * 1000
+                });
+
+                return res.json({
+                    success: true,
+                    message: "Login successful",
+                    data: {
+                        admin: {
+                            id: admin.id,
+                            name: admin.name,
+                            email: admin.email,
+                            isSuperAdmin: true
+                        }
+                    }
+                });
+            }
         }
 
-        const admin = rows[0];
-        const isMatch = await bcrypt.compare(password, admin.password_hash);
-
-        if (!isMatch) {
-            return res.status(401).json({ success: false, message: "Invalid credentials" });
-        }
-
-        const token = jwt.sign(
-            { id: admin.id, email: admin.email, name: admin.name },
-            process.env.JWT_SECRET,
-            { expiresIn: "1d" }
+        // 2. Check Regular User (users table)
+        const [userRows] = await db.query(
+            "SELECT * FROM users WHERE email = ? AND status = 'ACTIVE'",
+            [email]
         );
 
-        res.cookie("admin_token", token, {
-            httpOnly: true,
-            secure: process.env.NODE_ENV === 'production',
-            sameSite: "lax",
-            maxAge: 24 * 60 * 60 * 1000
-        });
+        if (userRows.length > 0) {
+            const user = userRows[0];
+            const isMatch = await bcrypt.compare(password, user.password_hash);
 
-        res.json({ success: true, message: "Login successful" });
+            if (isMatch) {
+                const token = jwt.sign(
+                    { id: user.id, email: user.email, name: user.name, isSuperAdmin: false },
+                    process.env.JWT_SECRET,
+                    { expiresIn: "1d" }
+                );
+
+                res.cookie("admin_token", token, {
+                    httpOnly: true,
+                    secure: process.env.NODE_ENV === 'production',
+                    sameSite: "lax",
+                    maxAge: 24 * 60 * 60 * 1000
+                });
+
+                return res.json({
+                    success: true,
+                    message: "Login successful",
+                    data: {
+                        admin: {
+                            id: user.id,
+                            name: user.name,
+                            email: user.email,
+                            isSuperAdmin: false
+                        }
+                    }
+                });
+            }
+        }
+
+        // 3. User not found or password mismatch
+        return res.status(401).json({ success: false, message: "Invalid credentials" });
+
     } catch (error) {
         next(error);
     }
