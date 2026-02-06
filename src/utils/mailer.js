@@ -237,3 +237,28 @@ export const getPartnerAdminTemplate = (name, email, phone, message) => baseTemp
     <a href="mailto:${email}" class="button" style="color: #ffffff;">Reply to Partner</a>
   </div>
 `);
+
+export const getUserInvitationTemplate = (name, setupUrl) => baseTemplate(`
+  <h2 style="color: #40308a; margin-top: 0;">Welcome to Daniry Admin!</h2>
+  <p>Hi <strong>${name}</strong>,</p>
+  <p>You've been invited to join the <strong>Daniry Admin Dashboard</strong>. To get started, please set your password by clicking the button below:</p>
+  
+  <div style="text-align: center; margin: 30px 0;">
+    <a href="${setupUrl}" class="button" style="color: #ffffff;">Set Your Password</a>
+  </div>
+  
+  <div class="divider"></div>
+  
+  <p style="color: #666; font-size: 14px;">Or copy and paste this link into your browser:</p>
+  <p style="word-break: break-all; color: #40308a; font-size: 12px; background-color: #f9f9f9; padding: 10px; border-radius: 5px;">${setupUrl}</p>
+  
+  <p style="color: #666; font-size: 14px; margin-top: 20px;">
+    <strong>This invitation link will expire in 7 days.</strong>
+  </p>
+  
+  <p style="color: #666; font-size: 14px;">
+    If you didn't expect this invitation, please ignore this email.
+  </p>
+  
+  <p style="margin-top: 25px;">Regards,<br/><strong>The Daniry Team</strong></p>
+`);

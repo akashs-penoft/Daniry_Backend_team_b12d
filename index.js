@@ -12,6 +12,8 @@ import newsletterRoutes from './src/routes/newsletterRoutes.js';
 import partnershipRoutes from './src/routes/partnershipRoutes.js';
 import productRoutes from './src/routes/productRoutes.js';
 import ecommerceRoutes from './src/routes/ecommerceRoutes.js';
+import userRoutes from './src/routes/userRoutes.js';
+import roleRoutes from './src/routes/roleRoutes.js';
 import path from 'path';
 import { fileURLToPath } from 'url';
 import helmet from 'helmet';
@@ -105,6 +107,12 @@ app.use('/api/products', productRoutes);
 
 // Ecommerce Platform routes
 app.use('/api/ecommerce-platforms', ecommerceRoutes);
+
+// User Management routes (RBAC)
+app.use('/api/users', userRoutes);
+
+// Role Management routes (RBAC)
+app.use('/api/roles', roleRoutes);
 
 // Static files for uploads
 app.use('/uploads', express.static(path.join(__dirname, 'uploads')));

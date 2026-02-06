@@ -88,7 +88,15 @@ export const adminLogout = (req, res) => {
 // Admin Check Authentication------
 export const checkAdmin = async (req, res) => {
     // If the request reached here, the auth middleware already verified the token
-    return res.json({ success: true, data: { authenticated: true, admin: req.admin } });
+    // Return admin info with isSuperAdmin flag for frontend
+    return res.json({
+        success: true,
+        data: {
+            authenticated: true,
+            admin: req.admin,
+            isSuperAdmin: req.admin?.isSuperAdmin || false
+        }
+    });
 };
 
 // Admin Request Password Reset------
