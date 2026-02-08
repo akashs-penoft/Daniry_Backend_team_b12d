@@ -5,6 +5,27 @@ import { transporter, getUserInvitationTemplate } from "../utils/mailer.js";
 import { clearUserPermissionCache } from "../middlewares/rbacMiddleware.js";
 
 /**
+ * Generate a complex temporary password
+ */
+const generateTempPassword = () => {
+  const length = 12;
+  const charset = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789!@#$%^&*()_+";
+  let password = "";
+  // Ensure at least one of each required type
+  password += "ABCDEFGHIJKLMNOPQRSTUVWXYZ"[Math.floor(Math.random() * 26)];
+  password += "abcdefghijklmnopqrstuvwxyz"[Math.floor(Math.random() * 26)];
+  password += "0123456789"[Math.floor(Math.random() * 10)];
+  password += "!@#$%^&*()_+"[Math.floor(Math.random() * 12)];
+
+  for (let i = 4; i < length; i++) {
+    password += charset.charAt(Math.floor(Math.random() * charset.length));
+  }
+
+  // Shuffle the password
+  return password.split('').sort(() => 0.5 - Math.random()).join('');
+};
+
+/**
  * Invite a new user
  * Creates user in PENDING state and sends invitation email
  * Super Admin only
@@ -65,20 +86,23 @@ export const inviteUser = async (req, res, next) => {
       }
     }
 
-    // Generate secure invitation token
+    // Generate secure invitation token and temporary password
     const invitationToken = crypto.randomBytes(32).toString("hex");
     const tokenHash = crypto
       .createHash("sha256")
       .update(invitationToken)
       .digest("hex");
 
+    const tempPassword = generateTempPassword();
+    const tempPasswordHash = await bcrypt.hash(tempPassword, 10);
+
     // Token expires in 7 days
     const expiresAt = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000);
 
-    // Store hashed token
+    // Store hashed token and temporary password
     await db.execute(
-      "INSERT INTO user_invitations (user_id, token_hash, expires_at) VALUES (?, ?, ?)",
-      [userId, tokenHash, expiresAt],
+      "INSERT INTO user_invitations (user_id, token_hash, temp_password_hash, expires_at) VALUES (?, ?, ?, ?)",
+      [userId, tokenHash, tempPasswordHash, expiresAt],
     );
 
     // Create setup URL
@@ -89,7 +113,7 @@ export const inviteUser = async (req, res, next) => {
       from: `"Daniry Admin" <${process.env.SMTP_EMAIL}>`,
       to: email,
       subject: "Welcome to Daniry Admin - Set Your Password",
-      html: getUserInvitationTemplate(name, setupUrl),
+      html: getUserInvitationTemplate(name, setupUrl, tempPassword),
     });
 
     res.status(201).json({
@@ -108,12 +132,12 @@ export const inviteUser = async (req, res, next) => {
  */
 export const setupPassword = async (req, res, next) => {
   try {
-    const { token, password } = req.body;
+    const { token, password, tempPassword } = req.body;
 
-    if (!token || !password) {
+    if (!token || !password || !tempPassword) {
       return res.status(400).json({
         success: false,
-        message: "Token and password are required",
+        message: "Token, temporary password, and new password are required",
       });
     }
 
@@ -121,7 +145,7 @@ export const setupPassword = async (req, res, next) => {
 
     // Find valid invitation
     const [invitations] = await db.execute(
-      `SELECT ui.user_id, u.email, u.name 
+      `SELECT ui.user_id, ui.temp_password_hash, u.email, u.name 
              FROM user_invitations ui
              JOIN users u ON ui.user_id = u.id
              WHERE ui.token_hash = ? AND ui.expires_at > NOW() AND ui.used = 0`,
@@ -132,6 +156,19 @@ export const setupPassword = async (req, res, next) => {
       return res.status(400).json({
         success: false,
         message: "Invalid or expired invitation token",
+      });
+    }
+
+    // Verify temporary password
+    const isTempPasswordValid = await bcrypt.compare(
+      tempPassword,
+      invitations[0].temp_password_hash
+    );
+
+    if (!isTempPasswordValid) {
+      return res.status(400).json({
+        success: false,
+        message: "Incorrect temporary password",
       });
     }
 
@@ -422,11 +459,11 @@ export const getMyPermissions = async (req, res, next) => {
 
     if (isSuperAdmin) {
       // Super Admin has all permissions
-      const [allPermissions] = await db.query("SELECT name FROM permissions");
+      const [allPermissions] = await db.query("SELECT slug FROM permissions");
       return res.json({
         success: true,
         data: {
-          permissions: allPermissions.map((p) => p.name),
+          permissions: allPermissions.map((p) => p.slug),
           isSuperAdmin: true,
         },
       });
@@ -435,7 +472,7 @@ export const getMyPermissions = async (req, res, next) => {
     // Get permissions from roles
     const [permissions] = await db.query(
       `
-            SELECT DISTINCT p.name
+            SELECT DISTINCT p.slug
             FROM permissions p
             INNER JOIN role_permissions rp ON p.id = rp.permission_id
             INNER JOIN user_roles ur ON rp.role_id = ur.role_id
@@ -447,7 +484,7 @@ export const getMyPermissions = async (req, res, next) => {
     res.json({
       success: true,
       data: {
-        permissions: permissions.map((p) => p.name),
+        permissions: permissions.map((p) => p.slug),
         isSuperAdmin: false,
       },
     });

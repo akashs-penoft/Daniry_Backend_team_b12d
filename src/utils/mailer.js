@@ -238,13 +238,19 @@ export const getPartnerAdminTemplate = (name, email, phone, message) => baseTemp
   </div>
 `);
 
-export const getUserInvitationTemplate = (name, setupUrl) => baseTemplate(`
+export const getUserInvitationTemplate = (name, setupUrl, tempPassword) => baseTemplate(`
   <h2 style="color: #40308a; margin-top: 0;">Welcome to Daniry Admin!</h2>
   <p>Hi <strong>${name}</strong>,</p>
   <p>You've been invited to join the <strong>Daniry Admin Dashboard</strong>. To get started, please set your password by clicking the button below:</p>
   
   <div style="text-align: center; margin: 30px 0;">
     <a href="${setupUrl}" class="button" style="color: #ffffff;">Set Your Password</a>
+  </div>
+
+  <div style="background-color: #f4f1ff; padding: 20px; border-radius: 8px; border: 1px dashed #40308a; margin: 20px 0;">
+    <p style="margin: 0; font-size: 14px; color: #736b91;">Your temporary invitation password:</p>
+    <p style="margin: 10px 0 0; font-family: monospace; font-size: 20px; font-weight: bold; color: #40308a; letter-spacing: 2px;">${tempPassword}</p>
+    <p style="margin: 10px 0 0; font-size: 12px; color: #a796f9;">* You will need this to set your permanent password.</p>
   </div>
   
   <div class="divider"></div>

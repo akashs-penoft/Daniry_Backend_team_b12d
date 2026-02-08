@@ -27,7 +27,7 @@ async function getUserPermissions(userId, isSuperAdmin = false) {
     try {
         // Get permissions from roles
         const [rolePermissions] = await db.query(`
-            SELECT DISTINCT p.name
+            SELECT DISTINCT p.slug
             FROM permissions p
             INNER JOIN role_permissions rp ON p.id = rp.permission_id
             INNER JOIN user_roles ur ON rp.role_id = ur.role_id
@@ -36,21 +36,21 @@ async function getUserPermissions(userId, isSuperAdmin = false) {
 
         // Get individual user permissions (overrides)
         const [userPermissions] = await db.query(`
-            SELECT p.name, up.granted
+            SELECT p.slug, up.granted
             FROM permissions p
             INNER JOIN user_permissions up ON p.id = up.permission_id
             WHERE up.user_id = ?
         `, [userId]);
 
         // Combine permissions
-        const permissions = new Set(rolePermissions.map(p => p.name));
+        const permissions = new Set(rolePermissions.map(p => p.slug));
 
         // Apply user-specific overrides
         userPermissions.forEach(up => {
             if (up.granted) {
-                permissions.add(up.name);
+                permissions.add(up.slug);
             } else {
-                permissions.delete(up.name);
+                permissions.delete(up.slug);
             }
         });
 

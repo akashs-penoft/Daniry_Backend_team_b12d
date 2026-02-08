@@ -21,6 +21,7 @@
   "homepage": "https://github.com/akashs-penoft/Daniry_Backend_team_b12d#readme",
   "description": "",
   "dependencies": {
+    "axios": "^1.13.5",
     "bcrypt": "^6.0.0",
     "compression": "^1.8.1",
     "cookie-parser": "^1.4.7",
