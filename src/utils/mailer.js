@@ -185,6 +185,23 @@ export const getPasswordResetTemplate = (resetUrl) => baseTemplate(`
   <p style="margin-top: 25px;">Regards,<br/><strong>The Daniry Team</strong></p>
 `);
 
+export const getOTPVerificationTemplate = (otp) => baseTemplate(`
+  <h2 style="color: #40308a; margin-top: 0;">Security Verification Code</h2>
+  <p>You are requesting a secure action on your <strong>Daniry Admin</strong> account.</p>
+  <p>Please use the following 6-digit verification code to proceed. This code will expire in 10 minutes.</p>
+  
+  <div style="background-color: #f4f1ff; padding: 30px; border-radius: 8px; border: 1px dashed #40308a; text-align: center; margin: 25px 0;">
+    <p style="margin: 0; font-size: 14px; color: #736b91; text-transform: uppercase; tracking-widest;">Your Verification Code</p>
+    <p style="margin: 15px 0 0; font-family: 'Courier New', monospace; font-size: 42px; font-weight: bold; color: #40308a; letter-spacing: 12px; line-height: 1;">${otp}</p>
+  </div>
+  
+  <p style="color: #666; font-size: 14px; margin-top: 20px;">
+    <strong>Security Note:</strong> Never share this code with anyone. Daniry staff will never ask for your verification code.
+  </p>
+  
+  <p style="margin-top: 25px;">Stay secure,<br/><strong>The Daniry Team</strong></p>
+`);
+
 export const getNewsletterConfirmationTemplate = () => baseTemplate(`
   <h2 style="color: #40308a; margin-top: 0;">Welcome to Daniry!</h2>
   <p>Thank you for subscribing to our newsletter. You are now part of our community!</p>

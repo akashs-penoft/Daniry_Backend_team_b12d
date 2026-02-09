@@ -2,7 +2,7 @@ import bcrypt from "bcrypt";
 import jwt from "jsonwebtoken";
 import crypto from "crypto";
 import { db } from "../configs/db.js";
-import { transporter, getPasswordResetTemplate } from "../utils/mailer.js";
+import { transporter, getPasswordResetTemplate, getOTPVerificationTemplate } from "../utils/mailer.js";
 
 // Admin Registration-----
 export const adminRegister = async (req, res, next) => {
@@ -293,6 +293,148 @@ export const updatePassword = async (req, res, next) => {
         );
 
         res.json({ success: true, message: "Password updated successfully" });
+    } catch (error) {
+        next(error);
+    }
+};
+
+/**
+ * Send Security OTP for password change (Authenticated)
+ */
+export const sendSecurityOTP = async (req, res, next) => {
+    try {
+        const { id, isSuperAdmin, email } = req.admin;
+
+        const table = isSuperAdmin ? "admins" : "users";
+        const [rows] = await db.query(`SELECT id FROM ${table} WHERE id = ?`, [id]);
+
+        if (rows.length === 0) {
+            return res.status(404).json({ success: false, message: "User not found" });
+        }
+
+        // Generate 6-digit OTP
+        const otp = Math.floor(100000 + Math.random() * 900000).toString();
+        const otpHash = await bcrypt.hash(otp, 10);
+        const expiresAt = new Date(Date.now() + 10 * 60 * 1000); // 10 minutes
+
+        // Delete previous OTPs for this email and purpose
+        await db.execute(
+            "DELETE FROM otp_verifications WHERE email = ? AND purpose = 'PASSWORD_CHANGE'",
+            [email]
+        );
+
+        // Store new OTP
+        await db.execute(
+            "INSERT INTO otp_verifications (email, otp_hash, purpose, expires_at) VALUES (?, ?, 'PASSWORD_CHANGE', ?)",
+            [email, otpHash, expiresAt]
+        );
+
+        // Send OTP email
+        await transporter.sendMail({
+            from: `"Daniry Admin" <${process.env.SMTP_EMAIL}>`,
+            to: email,
+            subject: "Security Verification Code",
+            html: getOTPVerificationTemplate(otp)
+        });
+
+        res.json({ success: true, message: "Verification code sent to your email" });
+    } catch (error) {
+        next(error);
+    }
+};
+
+/**
+ * Update password with OTP verification
+ */
+export const updatePasswordWithOTP = async (req, res, next) => {
+    try {
+        const { otp, newPassword } = req.body;
+        const { id, isSuperAdmin, email } = req.admin;
+
+        if (!otp || !newPassword) {
+            return res.status(400).json({ success: false, message: "OTP and new password are required" });
+        }
+
+        // Validate password strength
+        const strengthRegex = /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[!@#$%^&*(),.?":{}|<>])[A-Za-z\d!@#$%^&*(),.?":{}|<>]{8,}$/;
+        if (!strengthRegex.test(newPassword)) {
+            return res.status(400).json({
+                success: false,
+                message: "Password must be at least 8 characters long and include uppercase, lowercase, number, and special character."
+            });
+        }
+
+        // Verify OTP
+        const [otps] = await db.query(
+            "SELECT otp_hash FROM otp_verifications WHERE email = ? AND purpose = 'PASSWORD_CHANGE' AND expires_at > NOW() AND verified = 0",
+            [email]
+        );
+
+        if (otps.length === 0) {
+            return res.status(400).json({ success: false, message: "Invalid or expired verification code" });
+        }
+
+        const isOtpMatch = await bcrypt.compare(otp, otps[0].otp_hash);
+        if (!isOtpMatch) {
+            return res.status(400).json({ success: false, message: "Incorrect verification code" });
+        }
+
+        // Update password
+        const salt = await bcrypt.genSalt(10);
+        const hashedPassword = await bcrypt.hash(newPassword, salt);
+        const table = isSuperAdmin ? "admins" : "users";
+
+        await db.execute(`UPDATE ${table} SET password_hash = ? WHERE id = ?`, [hashedPassword, id]);
+
+        // Mark OTP as verified/used
+        await db.execute(
+            "UPDATE otp_verifications SET verified = 1 WHERE email = ? AND purpose = 'PASSWORD_CHANGE'",
+            [email]
+        );
+
+        res.json({ success: true, message: "Password updated successfully" });
+    } catch (error) {
+        next(error);
+    }
+};
+
+/**
+ * Update Profile Details (Name, Email)
+ */
+export const updateProfileDetails = async (req, res, next) => {
+    try {
+        const { name, email } = req.body;
+        const { id, isSuperAdmin } = req.admin;
+
+        if (!name) {
+            return res.status(400).json({ success: false, message: "Name is required" });
+        }
+
+        const table = isSuperAdmin ? "admins" : "users";
+
+        if (email) {
+            // Check if email already taken by another user
+            const [existing] = await db.query(
+                `SELECT id FROM ${table} WHERE email = ? AND id != ?`,
+                [email, id]
+            );
+
+            if (existing.length > 0) {
+                return res.status(400).json({ success: false, message: "Email is already in use" });
+            }
+
+            await db.execute(
+                `UPDATE ${table} SET name = ?, email = ? WHERE id = ?`,
+                [name, email, id]
+            );
+        } else {
+            await db.execute(
+                `UPDATE ${table} SET name = ? WHERE id = ?`,
+                [name, id]
+            );
+        }
+
+        res.json({ success: true, message: "Profile details updated successfully" });
     } catch (error) {
         next(error);
     }
